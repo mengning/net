@@ -45,5 +45,5 @@ int main(int argc, char *argv[])
 	buf[len]='\0';
 	printf("contents: %s\n",buf);
 	close(server_sockfd);
-        return 0;
+    return 0;
 }
