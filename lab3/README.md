@@ -22,7 +22,13 @@ cd lab3
 make
 cp init rootfs/
 sudo umount rootfs
-qemu-system-x86_64 -kernel linux-5.0.1/arch/x86/boot/bzImage -hda rootfs.img -append "root=/dev/sda init=/init"
+qemu-system-x86_64 -kernel linux-5.0.1/arch/x86_64/boot/bzImage -hda rootfs.img -append "root=/dev/sda init=/init" -s -S
+# 另一个shell窗口
+gdb
+file linux-5.0.1/vmlinux
+target remote:1234 #则可以建立gdb和gdbserver之间的连接
+break start_kernel
+按c 让qemu上的Linux继续运行
 ```
 
 
