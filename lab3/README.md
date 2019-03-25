@@ -10,7 +10,7 @@ tar -xvf linux-5.0.1.tar
 cd linux-5.0.1
 sudo apt install build-essential flex bison libssl-dev libelf-dev libncurses-dev
 make defconfig
-make menuconfig # Kernel hacking—>[*] Kernel debugging
+make menuconfig # Kernel hacking—>Compile-time checks and compiler options  ---> [*] Compile the kernel with debug info 
 make 或 make -j*       # *为cpu核心数
 sudo apt install qemu
 qemu-system-x86_64 -kernel linux-5.0.1/arch/x86/boot/bzImage
