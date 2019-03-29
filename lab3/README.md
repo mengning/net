@@ -1,6 +1,6 @@
 ## 编译构建调试Linux系统
 
-Based on Ubuntu 18.04 & linux-5.0.1
+自定搭建环境Based on Ubuntu 18.04 & linux-5.0.1，或使用在线环境：[实验楼虚拟机](https://www.shiyanlou.com/courses/1198)&[linux-3.18.6](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/)
 
 
 ```
