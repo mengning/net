@@ -5,7 +5,7 @@
 
 
 ```
-https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.0.1.tar.xz
+wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.0.1.tar.xz
 xz -d linux-5.0.1.tar.xz
 tar -xvf linux-5.0.1.tar
 cd linux-5.0.1
@@ -15,7 +15,7 @@ make menuconfig # Kernel hacking—>Compile-time checks and compiler options  --
 make 或 make -j*       # *为cpu核心数
 sudo apt install qemu
 qemu-system-x86_64 -kernel linux-5.0.1/arch/x86/boot/bzImage
-dd if=/dev/zero of=rootfs.img bs=4096 count=1024
+dd if=/dev/zero of=rootfs.img bs=1M count=128
 mkfs.ext4 rootfs.img
 mkdir rootfs
 sudo mount -o loop rootfs.img rootfs
@@ -23,7 +23,8 @@ cd lab3
 make
 cp init rootfs/
 sudo umount rootfs
-qemu-system-x86_64 -kernel linux-5.0.1/arch/x86_64/boot/bzImage -hda rootfs.img -append "root=/dev/sda init=/init" -s -S
+# KASLR是kernel address space layout randomization的缩写
+qemu-system-x86_64 -kernel linux-5.0.1/arch/x86_64/boot/bzImage -hda rootfs.img -append "root=/dev/sda init=/init nokaslr" -s -S
 # 另一个shell窗口
 gdb
 file linux-5.0.1/vmlinux
