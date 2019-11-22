@@ -9,6 +9,7 @@
 * netstat
 * nslookup
 * ssh
+* dhcp
 * iptables
 
 ## 网络编程接口
