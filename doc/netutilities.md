@@ -43,3 +43,12 @@ route add 192.168.0.1 gw
 
 到这里我们的Linux系统实际上已经连接到Internet上了，只是我们只能通过IP地址来访问Internet上的网络服务。要想通过域名来来访问Internet上的网络服务，还需要配置DNS域名解析服务，也就是指定DNS服务器的IP地址。
 
+* 参看系统默认DNS配置
+```
+cat /etc/resolv.conf
+```
+* 配置系统默认DNS
+```
+vi /etc/resolv.conf
+nameserver 114.114.114.114 # 在/etc/resolv.conf文件里添加一行
+```
