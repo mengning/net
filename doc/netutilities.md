@@ -58,4 +58,6 @@ nameserver 114.114.114.114 # 在/etc/resolv.conf文件里添加一行
 ```
 wget http://staff.ustc.edu.cn/~mengning/
 ```
+如果无法打开网页怎么办？在确保IP地址、默认网关和DNS配置正确的情况下，就需要通过网络诊断工具来跟踪网络发现问题。
+## 网络诊断工具
 
