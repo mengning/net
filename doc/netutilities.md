@@ -76,4 +76,4 @@ iptables有5种chain：
 * 由本机转发的报文：PREROUTING --> FORWARD --> POSTROUTING
 * 由本机的某进程发出报文（通常为响应报文）：OUTPUT --> POSTROUTING
 
-
+![iptables有5种chain](/images/iptables-chains.png)
