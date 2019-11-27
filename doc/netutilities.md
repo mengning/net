@@ -76,4 +76,20 @@ iptables有5种chain：
 * 由本机转发的报文：PREROUTING --> FORWARD --> POSTROUTING
 * 由本机的某进程发出报文（通常为响应报文）：OUTPUT --> POSTROUTING
 
-![iptables有5种chain](images/iptables-chains.png)
+![iptables的5种chain和3类处理过程](images/iptables-chains.png)
+图：iptables的5种chain和3类处理过程（图片需要修改，将“web服务终点/原点”改为“网络应用程序”）
+
+为了方便管理，把具有相同功能的规则的集合叫做table，不同功能的规则，放置在不同的table中进行管理，iptables中定义了4种table。四种表的功能为
+* filter表：负责过滤功能，防火墙；内核模块：iptables_filter
+* nat表：network address translation，网络地址转换功能；内核模块：iptable_nat
+* mangle表：拆解报文，做出修改，并重新封装 的功能；iptable_mangle
+* raw表：关闭nat表上启用的连接追踪机制；iptable_raw
+四种table处理顺序由先到后为：raw→mangle→nat→filter。但除了OUTPUT外有全部的四种表规则外，其他的chain只有两三个表规则。
+* PREROUTING ：raw表，mangle表，nat表
+* INPUT ：mangle表，filter表，（centos7中还有nat表，centos6中没有）
+* FORWARD：mangle表，filter表
+* OUTPUT：raw表，mangle表，nat表，filter表
+* POSTROUTING：mangle表，nat表
+
+![iptables的5种chain和4种tables](images/iptables-tables.png)
+图：iptables的5种chain和4种tables （图片来源于网络，考虑重新配色）
