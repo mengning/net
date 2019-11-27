@@ -1,4 +1,4 @@
-# 网络相关命令
+# 通过网络命令学习计算机网络
 
 ## 配置Linux系统连接Internet
 
@@ -60,4 +60,20 @@ wget http://staff.ustc.edu.cn/~mengning/
 ```
 如果无法打开网页怎么办？在确保IP地址、默认网关和DNS配置正确的情况下，就需要通过网络诊断工具来跟踪网络发现问题。
 ## 网络诊断工具
+
+## iptables
+
+iptables有5种chain：
+* PREROUTING:数据包进入路由表之前
+* INPUT:通过路由表后目的地为本机
+* FORWARDING:通过路由表后，目的地不为本机
+* OUTPUT:由本机产生，向外转发
+* POSTROUTIONG:发送到网卡接口之前。
+
+将报文的处理过程大致分成三类，每类报文会经过不同的chain：
+
+* 到本机某进程的报文：PREROUTING --> INPUT
+* 由本机转发的报文：PREROUTING --> FORWARD --> POSTROUTING
+* 由本机的某进程发出报文（通常为响应报文）：OUTPUT --> POSTROUTING
+
 
