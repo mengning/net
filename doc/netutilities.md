@@ -66,6 +66,7 @@ PING(Packet Internet Grope)因特网包探索器，一般用于检测网络通�
 * 测试某网站的连通性
 ```
 ping  www.163.com
+ping  114.114.114.114
 ```
 * 指定ping的次数为10次
 ```
