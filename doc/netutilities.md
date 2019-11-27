@@ -62,7 +62,8 @@ wget http://staff.ustc.edu.cn/~mengning/
 ## 网络诊断工具
 
 ## iptables
-
+简介toto
+### iptable的基本原理
 iptables有5种chain：
 * PREROUTING:数据包进入路由表之前
 * INPUT:通过路由表后目的地为本机
@@ -93,3 +94,16 @@ iptables有5种chain：
 
 ![iptables的5种chain和4种tables](images/iptables-tables.png)
 图：iptables的5种chain和4种tables （图片来源于网络，考虑重新配色）
+### iptables的基本用法
+todo
+### iptables的典型应用举例（该部分未经实验验证）
+
+* 禁止别人ping入，以防浪费服务器资源
+```
+iptables -t filter -A INPUT -p icmp --icmp-type 0 -j ACCEPT
+iptables -t filter -A OUTPUT -p icmp --icmp-type 8 -j ACCEPT
+```
+* 丢弃eth0网卡收到来自 192.168.1.0/24 的 1024:65535 端口的访问本机 ssh 端口的数据包
+```
+iptables -A INPUT -i eth0 -p tcp -s 192.168.1.0/24 --sport 1024:65535 --dport ssh -j DROP
+```
