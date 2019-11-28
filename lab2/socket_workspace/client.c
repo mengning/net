@@ -10,16 +10,16 @@
 #define	true		1
 #define false		0
 
-#define PORT 		3490 	/* ServerµÄ¶Ë¿Ú */
-#define MAXDATASIZE 100 	/*Ò»´Î¿ÉÒÔ¶ÁµÄ×î´ó×Ö½ÚÊı */
+#define PORT 		3490 	/* Serverçš„ç«¯å£ */
+#define MAXDATASIZE 100 	/*ä¸€æ¬¡å¯ä»¥è¯»çš„æœ€å¤§å­—èŠ‚æ•° */
 
 
 int main(int argc, char *argv[])
 {
 	int sockfd, numbytes;
 	char buf[MAXDATASIZE];
-	struct hostent *he; /* Ö÷»úĞÅÏ¢ */
-	struct sockaddr_in their_addr; /* ¶Ô·½µØÖ·ĞÅÏ¢ */
+	struct hostent *he; /* ä¸»æœºä¿¡æ¯ */
+	struct sockaddr_in their_addr; /* å¯¹æ–¹åœ°å€ä¿¡æ¯ */
 	if (argc != 2) 
 	{
 		fprintf(stderr,"usage: client hostname\n");
@@ -29,13 +29,13 @@ int main(int argc, char *argv[])
 	/* get the host info */
 	if ((he=Gethostbyname(argv[1])) == NULL) 
 	{
-		/* ×¢Òâ£º»ñÈ¡DNSĞÅÏ¢Ê±£¬ÏÔÊ¾³ö´íĞèÒªÓÃherror¶ø²»ÊÇperror */
-		/* herror ÔÚĞÂµÄ°æ±¾ÖĞ»á³öÏÖ¾¯¸æ£¬ÒÑ¾­½¨Òé²»ÒªÊ¹ÓÃÁË */
+		/* æ³¨æ„ï¼šè·å–DNSä¿¡æ¯æ—¶ï¼Œæ˜¾ç¤ºå‡ºé”™éœ€è¦ç”¨herrorè€Œä¸æ˜¯perror */
+		/* herror åœ¨æ–°çš„ç‰ˆæœ¬ä¸­ä¼šå‡ºç°è­¦å‘Šï¼Œå·²ç»å»ºè®®ä¸è¦ä½¿ç”¨äº† */
 		perror("gethostbyname");
 		exit(1);
 	}
 	
-	if ((sockfd=Socket(AF_INET,SOCK_STREAM,0))==-1) 
+	if ((sockfd=Socket(PF_INET,SOCK_STREAM,0))==-1) 
 	{
 		perror("socket");
 		exit(1);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	their_addr.sin_family = AF_INET;
 	their_addr.sin_port = Htons(PORT); /* short, NBO */
 	their_addr.sin_addr = *((struct in_addr *)he->h_addr_list[0]);
-	memset(&(their_addr.sin_zero),0, 8); /* ÆäÓà²¿·ÖÉè³É0 */
+	memset(&(their_addr.sin_zero),0, 8); /* å…¶ä½™éƒ¨åˆ†è®¾æˆ0 */
 
 	dbtime_startTest ("Connect & Recv");
 	
