@@ -10,26 +10,26 @@
 #define	true		1
 #define false		0
 
-#define MYPORT 		3490                /* ¼àÌýµÄ¶Ë¿Ú */ 
-#define BACKLOG 	10                 	/* listenµÄÇëÇó½ÓÊÕ¶ÓÁÐ³¤¶È */
+#define MYPORT 		3490                /* ç›‘å¬çš„ç«¯å£ */ 
+#define BACKLOG 	10                 	/* listençš„è¯·æ±‚æŽ¥æ”¶é˜Ÿåˆ—é•¿åº¦ */
 
 int main() 
 {
-	int sockfd, new_fd;            /* ¼àÌý¶Ë¿Ú£¬Êý¾Ý¶Ë¿Ú */
-	struct sockaddr_in sa;         /* ×ÔÉíµÄµØÖ·ÐÅÏ¢ */ 
-	struct sockaddr_in their_addr; /* Á¬½Ó¶Ô·½µÄµØÖ·ÐÅÏ¢ */ 
+	int sockfd, new_fd;            /* ç›‘å¬ç«¯å£ï¼Œæ•°æ®ç«¯å£ */
+	struct sockaddr_in sa;         /* è‡ªèº«çš„åœ°å€ä¿¡æ¯ */ 
+	struct sockaddr_in their_addr; /* è¿žæŽ¥å¯¹æ–¹çš„åœ°å€ä¿¡æ¯ */ 
 	int sin_size;
 	
-	if ((sockfd = Socket(AF_INET, SOCK_STREAM, 0)) == -1) 
+	if ((sockfd = Socket(PF_INET, SOCK_STREAM, 0)) == -1) 
 	{
 		perror("socket"); 
 		exit(1); 
 	}
 	
 	sa.sin_family = AF_INET;
-	sa.sin_port = Htons(MYPORT);         /* ÍøÂç×Ö½ÚË³Ðò */
-	sa.sin_addr.s_addr = INADDR_ANY;     /* ×Ô¶¯Ìî±¾»úIP */
-	memset(&(sa.sin_zero),0, 8);            /* ÆäÓà²¿·ÖÖÃ0 */
+	sa.sin_port = Htons(MYPORT);         /* ç½‘ç»œå­—èŠ‚é¡ºåº */
+	sa.sin_addr.s_addr = INADDR_ANY;     /* è‡ªåŠ¨å¡«æœ¬æœºIP */
+	memset(&(sa.sin_zero),0, 8);            /* å…¶ä½™éƒ¨åˆ†ç½®0 */
 	
 	if ( Bind(sockfd, (struct sockaddr *)&sa, sizeof(sa)) == -1) 
 	{
@@ -43,7 +43,7 @@ int main()
 		exit(1);
 	}
 	
-	/* Ö÷Ñ­»· */
+	/* ä¸»å¾ªçŽ¯ */
 	while(1) 
 	{
 		sin_size = sizeof(struct sockaddr_in);
@@ -57,7 +57,7 @@ int main()
 		printf("Got connection from %s\n", Inet_ntoa(their_addr.sin_addr));
 		if (fork() == 0) 
 		{
-			/* ×Ó½ø³Ì */
+			/* å­è¿›ç¨‹ */
 			if (Send(new_fd, "Hello, world!\n", 14, 0) == -1)
 			perror("send");
 			Close(new_fd);
@@ -66,7 +66,7 @@ int main()
 	
 		Close(new_fd);
 		
-		/*Çå³ýËùÓÐ×Ó½ø³Ì */
+		/*æ¸…é™¤æ‰€æœ‰å­è¿›ç¨‹ */
 		while(waitpid(-1,NULL,WNOHANG) > 0); 
 
 	}
