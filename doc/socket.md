@@ -1,7 +1,164 @@
 # 通过Socket编程接口学习计算机网络
 
-## 动手写一个网络聊天程序
+## 动手写第一个网络程序
 
+```
+/* client.c */
+#include <stdio.h> 		/* perror */
+#include <stdlib.h>		/* exit	*/
+#include <sys/types.h>		/* WNOHANG */
+#include <sys/wait.h>		/* waitpid */
+#include <string.h>		/* memset */
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <netdb.h>		/* gethostbyname */
+
+#define	true		1
+#define false		0
+
+#define PORT 		3490 	/* Server的端口 */
+#define MAXDATASIZE 	100 	/* 一次可以读的最大字节数 */
+
+
+int main(int argc, char *argv[])
+{
+	int sockfd, numbytes;
+	char buf[MAXDATASIZE];
+	struct hostent *he; /* 主机信息 */
+	struct sockaddr_in their_addr; /* 对方地址信息 */
+	if (argc != 2) 
+	{
+		fprintf(stderr,"usage: client hostname\n");
+		exit(1);
+	}
+	
+	/* get the host info */
+	if ((he=gethostbyname(argv[1])) == NULL) 
+	{
+		/* 注意：获取DNS信息时，显示出错需要用herror而不是perror */
+		/* herror 在新的版本中会出现警告，已经建议不要使用了 */
+		perror("gethostbyname");
+		exit(1);
+	}
+	
+	if ((sockfd=socket(PF_INET,SOCK_STREAM,0)) == -1) 
+	{
+		perror("socket");
+		exit(1);
+	}
+	
+	their_addr.sin_family = AF_INET;
+	their_addr.sin_port = htons(PORT); /* short, NBO */
+	their_addr.sin_addr = *((struct in_addr *)he->h_addr_list[0]);
+	memset(&(their_addr.sin_zero),0, 8); /* 其余部分设成0 */
+
+	if (connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) 
+	{
+		perror("connect");
+		exit(1);
+	}
+	
+	if ((numbytes = recv(sockfd,buf,MAXDATASIZE,0)) == -1) 
+	{
+		perror("recv");
+		exit(1);
+	}
+
+	buf[numbytes] = '\0';
+	printf("Received: %s",buf);
+	close(sockfd);
+	
+	return true;
+}
+```
+```
+
+/* server.c */
+#include <stdio.h> 		/* perror */
+#include <stdlib.h>		/* exit	*/
+#include <sys/types.h>		/* WNOHANG */
+#include <sys/wait.h>		/* waitpid */
+#include <string.h>		/* memset */
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <netdb.h>		/* gethostbyname */
+
+#define	true		1
+#define false		0
+
+#define MYPORT 		3490    /* 监听的端口 */ 
+#define BACKLOG 	10      /* listen的请求接收队列长度 */
+
+int main() 
+{
+	int sockfd, new_fd;            /* 监听端口，数据端口 */
+	struct sockaddr_in sa;         /* 自身的地址信息 */ 
+	struct sockaddr_in their_addr; /* 连接对方的地址信息 */ 
+	int sin_size;
+	
+	if ((sockfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) 
+	{
+		perror("socket"); 
+		exit(1); 
+	}
+	
+	sa.sin_family = AF_INET;
+	sa.sin_port = htons(MYPORT);         /* 网络字节顺序 */
+	sa.sin_addr.s_addr = INADDR_ANY;     /* 自动填本机IP */
+	memset(&(sa.sin_zero),0, 8);         /* 其余部分置0 */
+	
+	if ( bind(sockfd, (struct sockaddr *)&sa, sizeof(sa)) == -1) 
+	{
+		perror("bind");
+		exit(1);
+	}
+	
+	if (listen(sockfd, BACKLOG) == -1) 
+	{
+		perror("listen");
+		exit(1);
+	}
+	
+	/* 主循环 */
+	while(1) 
+	{
+		sin_size = sizeof(struct sockaddr_in);
+		new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+		if (new_fd == -1) 
+		{
+			perror("accept");
+			continue;
+		}
+		
+		printf("Got connection from %s\n", Inet_ntoa(their_addr.sin_addr));
+		if (fork() == 0) 
+		{
+			/* 子进程 */
+			if (send(new_fd, "Hello, world!\n", 14, 0) == -1)
+			perror("send");
+			close(new_fd);
+			exit(0);
+		}
+	
+		close(new_fd);
+		
+		/*清除所有子进程 */
+		while(waitpid(-1,NULL,WNOHANG) > 0); 
+	}
+	close(sockfd);
+	return true;
+}
+```
 ## Socket编程接口详解
 
 Socket套接字是通信过程中两端的编程接口。使用套接字类型（Socket Types）和特定协议来创建套接字，创建套接字时获得的文件描述符是编程中访问特定套接字的依据。除了套接字类型和协议族，还有网络地址的存储结构也非常重要，在进一步学习Socket编程接口之前，我们先来具体看看网络地址的存储结构、协议族和地址族、以及套接字类型。
