@@ -91,7 +91,8 @@ socket函数原型中有三个参数：
 * domain：域类型，指明使用的协议栈，如TCP/IP使用的是 PF_INET	
 * type: 指明需要的服务类型, 如SOCK_DGRAM:数据报服务，UDP协议SOCK_STREAM: 流服务，TCP协议
 * protocol:一般都取0
-举例：
+
+socket函数应用举例：
 ```
-int s=socket(PF_INET,SOCK_STREAM,0);
+int socket_fd = socket(PF_INET, SOCK_STREAM, 0);
 ```
