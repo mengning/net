@@ -4,7 +4,7 @@
 
 ## Socket编程接口详解
 
-Socket套接字是通信过程中两端的编程接口。使用套接字类型（Socket Types）和特定协议来创建套接字，创建套接字时获得的文件描述符是编程中访问特定套接字的依据。
+Socket套接字是通信过程中两端的编程接口。使用套接字类型（Socket Types）和特定协议来创建套接字，创建套接字时获得的文件描述符是编程中访问特定套接字的依据。除了套接字类型和协议族，还有网络地址的存储结构也非常重要，在进一步学习Socket编程接口之前，我们先来具体看看网络地址的存储结构、协议族和地址族、以及套接字类型。
 
 ## sockaddr和sockaddr_in的不同作用
 
@@ -56,7 +56,7 @@ sockaddr和sockaddr_in的关系有点像面向对象编程中的父类和子类�
 
 尽管他们的值相同，但它们的含义是不同的，网上很多代码将AF_INET和PF_INET混用，如果您了解他们的含义就不会随便混用了，根据如下注释可以看到A代表Address families，P代表Protocol families，也就是说当表示地址时用AF_INET，表示协议时用PF_INET。我们一般写代码时给地址结构体变量赋值如“serveraddr.sin_family = AF_INET;”中使用AF_INET，而创建套接口时如“sockfd = socket(PF_INET,SOCK_STREAM,0);”中使用PF_INET。
 
-## SOCK_STREAM及其他协议
+## SOCK_STREAM及其他套接字类型
 
 在/usr/include/bits/socket_type.h可以找到“__socket_type”，不同协议族一般都会定义不同类型的通信方式，对于基于TCP/IP的互联网协议族（即PF_INET），面向连接的TCP协议的socket类型即为SOCK_STREAM，无连接的UDP协议即为SOCK_DGRAM，而SOCK_RAW 工作在网络层。SOCK_RAW 可以处理ICMP、IGMP等网络报文、特殊的IPv4报文等。
 
