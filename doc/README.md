@@ -17,3 +17,5 @@
 
 
 ## 庖丁解牛Linux网络协议栈
+
+* [构建调试Linux内核网络代码的环境MenuOS系统](setupMenuOS.md)
