@@ -152,3 +152,95 @@ Replyhi函数的内容和之前的C/S网络通信程序的server.c基本一样�
 如果还要给MenuOS增加新的命令只需要按这种方式MenuConfig增加一行,再增加对应的函数就可以了。
 
 接下来您就可以参照前面“跟踪分析Linux内核的启动过程的具体操作方法”进行跟踪调试了，只是我们socket接口使用的是系统sys_socketcall，可以将sys_socketcall设为断点跟踪看看。
+
+## 初始化MenuOS系统的网络功能
+
+之前我们已经将TCP网络程序的服务端replyhi集成到MenuOS中了，而且可以正常的启动TCP服务，方便我们跟踪socket、bind、listen、accept几个API接口到内核处理函数，但是我们启动的TCP服务并不能正常对外提供服务，因为MenuOS没有初始化网络设备（包括本地回环loopback设备），因此它无法接收到任何网络请求。
+接下来我们需要搞清楚如何激活Linux网络设备，并将MenuOS系统的网络设备用简便的方式配置好，使我们将TCP客户端也集成进去后可以完整的运行TCP网络程序的服务端和客户端程序。
+
+### 如何激活Linux网络设备接口
+
+#### Linux发行版一般在启动过程中自动激活网络设备接口的方式
+一般Linux系统中的/etc/network/interfaces文件里会看到大致如下的代码：
+```
+auto lo 
+iface lo inet loopback
+auto eth0 
+iface eth0 inet static 
+auto wlan1 
+iface wlan1 inet dhcp 
+```
+auto lo/eth0/wlan1都是表示系统启动时自动激活该网络设备接口，一般使用ifup来激活网络设备接口。
+inet是指定该网络设备接口使用互联网地址，其中loopback表示使用IP地址127.0.0.1(网络地址127.0.0.0/8)，RFC 1700中定义本地回环网络的地址；static表示手工设置地址；dhcp表示通过DHCP协议自动获取地址。
+
+Linux系统的启动脚本一般会通过执行ifconfig来激活网络设备接口，ifconfig内部通过调用socket和ioctl来通知内核给网络设备接口做适当的设置工作，例如在实验楼虚拟机环境下跟踪ifconfig配置IP并激活本地回环lo网络接口如下：
+```
+shiyanlou:~/ $ sudo strace ifconfig lo 127.0.0.1 up                  [18:04:53]
+execve("/sbin/ifconfig", ["ifconfig", "lo", "127.0.0.1", "up"], [/* 30 vars */]) = 0
+...
+socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 4
+...
+ioctl(4, SIOCSIFADDR, {ifr_name="lo", ???}) = -1 EPERM (Operation not permitted)
+...
+ioctl(4, SIOCGIFFLAGS, {ifr_name="lo", ifr_flags=IFF_UP|IFF_LOOPBACK|IFF_RUNNING}) = 0
+ioctl(4, SIOCSIFFLAGS, {ifr_name="lo", ???}) = -1 EPERM (Operation not permitted)
+...
+ioctl(4, SIOCGIFFLAGS, {ifr_name="lo", ifr_flags=IFF_UP|IFF_LOOPBACK|IFF_RUNNING}) = 0
+ioctl(4, SIOCSIFFLAGS, {ifr_name="lo", ???}) = -1 EPERM (Operation not permitted)
+...
+shiyanlou:~/ $ 
+```
+
+#### 在MenuOS中手工编码激活网络设备接口lo
+
+仿照Linux系统一般在启动过程中自动激活网络设备接口使用的ifconfig程序中调用socket和ioctl接口的方式撰写代码来激活网络接口lo，[手工编码激活网络设备接口lo](https://github.com/mengning/linuxnet/blob/master/lab3/main.c#L188)具体摘录代码如下：
+
+```
+    struct sockaddr_in sa;
+    struct ifreq ifreqlo;
+    int fd;
+    sa.sin_family = AF_INET;
+    sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+    fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+    strncpy(ifreqlo.ifr_name, "lo",sizeof("lo"));
+    memcpy((char *) &ifreqlo.ifr_addr, (char *) &sa, sizeof(struct sockaddr));
+    ioctl(fd, SIOCSIFADDR, &ifreqlo);
+    ioctl(fd, SIOCGIFFLAGS, &ifreqlo);
+    ifreqlo.ifr_flags |= IFF_UP|IFF_LOOPBACK|IFF_RUNNING;
+    ioctl(fd, SIOCSIFFLAGS, &ifreqlo);
+    close(fd);
+```
+其中创建了socket描述符fd，指明网络接口lo、地址族AF_INET和IP地址127.0.0.1，通过ioctl利用预定义的指令SIOCSIFADDR（Socket IO Configuration Set IF ADDR）设置网络接口配置信息，然后利用SIOCSIFFLAGS设置IFF_UP|IFF_LOOPBACK|IFF_RUNNING激活该网络接口。
+
+## 将TCP网络通信程序的客户端也集成到MenuOS系统中
+
+接下来我们需要将C/S方式的网络通信程序的客户端也集成到MenuOS系统中,成为MenuOS系统的命令hello。首先增加Hello，可以直接拷贝原来client.c中的代码如下：
+```
+int Hello(int argc, char *argv[])
+{
+	char szBuf[MAX_BUF_LEN] = "\0";
+	char szMsg[MAX_BUF_LEN] = "hello\0";
+	OpenRemoteService();
+	SendMsg(szMsg);
+	RecvMsg(szBuf);
+	CloseRemoteService();
+	return 0;
+}
+```
+然后在main函数中和repplyhi方式一样增加一行MenuConfig("hello", "Hello TCP Client", Hello)如下：
+```
+    MenuConfig("replyhi", "Reply hi TCP Service", StartReplyhi);
+    MenuConfig("hello", "Hello TCP Client", Hello);
+```
+实际上我们已经给大家集成好了,我们git clone 克隆一个linuxnet.git；进入lab3目录执行make可以将我们集成好的代码copy到menu项目中。然后进入menu,我们写了一个脚本rootfs,运行make rootfs,脚本就可以帮助我们自动编译、自动生成根文件系统,还会帮我们运行起来MenuOS系统。详细命令如下：
+```
+cd LinuxKernel  
+git clone https://github.com/mengning/linuxnet.git
+cd linuxnet/lab3
+make rootfs
+```
+运行起来的MenuOS中执行help命令可以看到其中不止有replyhi，也有了hello命令，我们可以先执行replyhi，然后执行hello。具体效果如下：
+
+![](http://i2.51cto.com/images/blog/201811/12/f70b42b94f0bb72f74de1acaf51cfcf1.png)
+
+这样我们构建好了带网络功能的MenoOS系统，方便我们后续跟踪Linux内核代码。
