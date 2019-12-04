@@ -2,15 +2,8 @@
 
 ## [通过网络命令学习计算机网络](netutilities.md)
 
-* ifconfig
-* route
-* ping
-* traceroute
-* netstat
-* nslookup
-* ssh
-* dhcp
-* iptables
+### [配置Linux系统连接Internet](netutilities.md#配置linux系统连接internet)
+### 
 
 ## [通过Socket编程接口学习计算机网络](socket.md)
 
