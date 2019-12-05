@@ -140,7 +140,7 @@ int main()
 			continue;
 		}
 		
-		printf("Got connection from %s\n", Inet_ntoa(their_addr.sin_addr));
+		printf("Got connection from %s\n", inet_ntoa(their_addr.sin_addr));
 		if (fork() == 0) 
 		{
 			/* 子进程 */
