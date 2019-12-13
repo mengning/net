@@ -15,6 +15,56 @@ void syscall_init(void)
 ## 系统调用的正常执行
 
 用户态程序发起系统调用，对于x86-64位程序应该是直接跳到entry_SYSCALL_64
+  * [32位的系统调用服务程序](https://github.com/mengning/linux/blob/master/arch/x86/entry/entry_32.S#L989)
+```
+ENTRY(entry_INT80_32)
+	ASM_CLAC
+	pushl	%eax			/* pt_regs->orig_ax */
+
+	SAVE_ALL pt_regs_ax=$-ENOSYS switch_stacks=1	/* save rest */
+
+	/*
+	 * User mode is traced as though IRQs are on, and the interrupt gate
+	 * turned them off.
+	 */
+	TRACE_IRQS_OFF
+
+	movl	%esp, %eax
+	call	do_int80_syscall_32
+	...
+```
+     * [do_int80_syscall_32](https://github.com/torvalds/linux/blob/ab851d49f6bfc781edd8bd44c72ec1e49211670b/arch/x86/entry/common.c#L345)
+```
+static __always_inline void do_syscall_32_irqs_on(struct pt_regs *regs)
+{
+...
+#ifdef CONFIG_IA32_EMULATION
+		regs->ax = ia32_sys_call_table[nr](regs);
+#else
+		/*
+		 * It's possible that a 32-bit syscall implementation
+		 * takes a 64-bit parameter but nonetheless assumes that
+		 * the high bits are zero.  Make sure we zero-extend all
+		 * of the args.
+		 */
+		regs->ax = ia32_sys_call_table[nr](
+			(unsigned int)regs->bx, (unsigned int)regs->cx,
+			(unsigned int)regs->dx, (unsigned int)regs->si,
+			(unsigned int)regs->di, (unsigned int)regs->bp);
+#endif /* CONFIG_IA32_EMULATION */
+	}
+
+	syscall_return_slowpath(regs);
+}
+
+/* Handles int $0x80 */
+__visible void do_int80_syscall_32(struct pt_regs *regs)
+{
+	enter_from_user_mode();
+	local_irq_enable();
+	do_syscall_32_irqs_on(regs);
+}
+```
   * [64位的系统调用服务例程](https://github.com/torvalds/linux/blob/ab851d49f6bfc781edd8bd44c72ec1e49211670b/arch/x86/entry/entry_64.S#L175)
 ```
 SYM_CODE_START(entry_SYSCALL_64)
@@ -24,7 +74,7 @@ SYM_CODE_START(entry_SYSCALL_64)
 	movq	%rsp, %rsi
 	call	do_syscall_64		/* returns with IRQs disabled */
 ```
-  * [do_syscall_64](https://github.com/torvalds/linux/blob/ab851d49f6bfc781edd8bd44c72ec1e49211670b/arch/x86/entry/common.c#L282)
+     * [do_syscall_64](https://github.com/torvalds/linux/blob/ab851d49f6bfc781edd8bd44c72ec1e49211670b/arch/x86/entry/common.c#L282)
 ```
 #ifdef CONFIG_X86_64
 __visible void do_syscall_64(unsigned long nr, struct pt_regs *regs)
@@ -37,3 +87,7 @@ __visible void do_syscall_64(unsigned long nr, struct pt_regs *regs)
 }
 #endif
 ```
+## 系统调用表的初始化
+
+ia32_sys_call_table 和 sys_call_table 数组都是由如下目录下的代码初始化的。
+https://github.com/mengning/linux/tree/master/arch/x86/entry/syscalls
