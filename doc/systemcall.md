@@ -2,8 +2,8 @@
 
 ## 系统调用的初始化
 
-* start_kernel --> trap_init --> idt_setup_traps --> 0x80--entry_INT80_32，在5.0内核int0x80对应的中断服务例程是entry_INT80_32，而不是原来的名称system_call了。
-
+* x86-32位系统：start_kernel --> trap_init --> idt_setup_traps --> 0x80--entry_INT80_32，在5.0内核int0x80对应的中断服务例程是entry_INT80_32，而不是原来的名称system_call了。
+* x86-64位系统：start_kernel --> trap_init --> cpu_init --> syscall_init
 [64位的系统调用中断向量与服务例程绑定](https://github.com/torvalds/linux/blob/c3bfc5dd73c6f519ff0636d4e709515f06edef78/arch/x86/kernel/cpu/common.c#L1670)
 ```
 void syscall_init(void)
