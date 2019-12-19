@@ -23,6 +23,7 @@ static int __init inet_init(void)
 	 */
 
 	...
+	if (inet_add_protocol(&tcp_protocol, IPPROTO_TCP) < 0)
 		pr_crit("%s: Cannot add TCP protocol\n", __func__);
 	...
 	/* Register the socket-side information for inet_create. */
@@ -45,7 +46,49 @@ fs_initcall(inet_init);
 ```
 接下来我们以TCP协议为例来看TCP/IP协议栈的初始化过程。
 
-* TCP协议的初始化[tcp_init](https://github.com/mengning/linux/blob/master/net/ipv4/tcp.c#L3837)
+### TCP协议的初始化
+* [tcp_prot](https://github.com/mengning/linux/blob/master/net/ipv4/tcp_ipv4.c#L2536)
+``` 
+struct proto tcp_prot = {
+	.name			= "TCP",
+	.owner			= THIS_MODULE,
+	.close			= tcp_close,
+	.pre_connect		= tcp_v4_pre_connect,
+	.connect		= tcp_v4_connect,
+	.disconnect		= tcp_disconnect,
+	.accept			= inet_csk_accept,
+	.ioctl			= tcp_ioctl,
+	.init			= tcp_v4_init_sock,
+	.destroy		= tcp_v4_destroy_sock,
+	.shutdown		= tcp_shutdown,
+	.setsockopt		= tcp_setsockopt,
+	.getsockopt		= tcp_getsockopt,
+	.keepalive		= tcp_set_keepalive,
+	.recvmsg		= tcp_recvmsg,
+	.sendmsg		= tcp_sendmsg,
+	.sendpage		= tcp_sendpage,
+	.backlog_rcv		= tcp_v4_do_rcv,
+	.release_cb		= tcp_release_cb,
+	...
+};
+EXPORT_SYMBOL(tcp_prot);
+```
+* [tcp_protocol](https://github.com/mengning/linux/blob/master/net/ipv4/tcp_ipv4.c#L2536)
+```
+/* thinking of making this const? Don't.
+ * early_demux can change based on sysctl.
+ */
+static struct net_protocol tcp_protocol = {
+	.early_demux	=	tcp_v4_early_demux,
+	.early_demux_handler =  tcp_v4_early_demux,
+	.handler	=	tcp_v4_rcv,
+	.err_handler	=	tcp_v4_err,
+	.no_policy	=	1,
+	.netns_ok	=	1,
+	.icmp_strict_tag_validation = 1,
+};
+```
+* [tcp_init](https://github.com/mengning/linux/blob/master/net/ipv4/tcp.c#L3837)
 ```
 void __init tcp_init(void)
 {
