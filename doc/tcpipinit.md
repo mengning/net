@@ -43,3 +43,16 @@ static int __init inet_init(void)
 
 fs_initcall(inet_init);
 ```
+接下来我们以TCP协议为例来看TCP/IP协议栈的初始化过程。
+
+* TCP协议的初始化[tcp_init](https://github.com/mengning/linux/blob/master/net/ipv4/tcp.c#L3837)
+```
+void __init tcp_init(void)
+{
+	...
+	tcp_v4_init();
+	tcp_metrics_init();
+	BUG_ON(tcp_register_congestion_control(&tcp_reno) != 0);
+	tcp_tasklet_init();
+}
+```
