@@ -67,7 +67,7 @@ TCP的三次握手从用户程序的角度看就是客户端connect和服务端a
 265EXPORT_SYMBOL(tcp_v4_connect);
 ```
 [tcp_connect函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_output.c#3091)具体负责构造一个携带SYN标志位的TCP头并发送出去，同时还设置了计时器超时重发。
-
+```
 3090/* Build a SYN and send it off. */
 3091int tcp_connect(struct sock *sk)
 3092{
@@ -95,7 +95,7 @@ TCP的三次握手从用户程序的角度看就是客户端connect和服务端a
 3131				  inet_csk(sk)->icsk_rto, TCP_RTO_MAX);
 3132	return 0;
 3133}
-
+```
 其中tcp_transmit_skb函数负责将tcp数据发送出去，这里调用了icsk->icsk_af_ops->queue_xmit函数指针，实际上就是在TCP/IP协议栈初始化时设定好的IP层向上提供数据发送接口[ip_queue_xmit函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#363)，这里TCP协议栈通过调用这个icsk->icsk_af_ops->queue_xmit函数指针来触发IP协议栈代码发送数据，感兴趣的读者可以查找queue_xmit函数指针是如何初始化为ip_queue_xmit函数的。具体ip_queue_xmit函数内部的实现我们在后续内容中会专题研究，本文聚焦在TCP协议的三次握手。
 ```
 876/* This routine actually transmits TCP packets queued in by
@@ -332,4 +332,101 @@ do_time_wait:
 	}
 	goto discard_it;
 }
+```
+* [tcp_rcv_state_process](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/net/ipv4/tcp_input.c#L6129)
+```
+/*
+ *	This function implements the receiving procedure of RFC 793 for
+ *	all states except ESTABLISHED and TIME_WAIT.
+ *	It's called from both tcp_v4_rcv and tcp_v6_rcv and should be
+ *	address independent.
+ */
+
+int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb)
+{
+	...
+	switch (sk->sk_state) {
+	...
+	case TCP_LISTEN:
+		if (th->ack)
+			return 1;
+
+		if (th->rst)
+			goto discard;
+
+		if (th->syn) {
+			if (th->fin)
+				goto discard;
+			/* It is possible that we process SYN packets from backlog,
+			 * so we need to make sure to disable BH and RCU right there.
+			 */
+			rcu_read_lock();
+			local_bh_disable();
+			acceptable = icsk->icsk_af_ops->conn_request(sk, skb) >= 0;
+			local_bh_enable();
+			rcu_read_unlock();
+
+			if (!acceptable)
+				return 1;
+			consume_skb(skb);
+			return 0;
+		}
+		goto discard;
+
+	case TCP_SYN_SENT:
+		tp->rx_opt.saw_tstamp = 0;
+		tcp_mstamp_refresh(tp);
+		queued = tcp_rcv_synsent_state_process(sk, skb, th);
+		if (queued >= 0)
+			return queued;
+
+		/* Do step6 onward by hand. */
+		tcp_urg(sk, skb, th);
+		__kfree_skb(skb);
+		tcp_data_snd_check(sk);
+		return 0;
+	}
+	...
+	switch (sk->sk_state) {
+	case TCP_SYN_RECV:
+		tp->delivered++; /* SYN-ACK delivery isn't tracked in tcp_ack */
+		if (!tp->srtt_us)
+			tcp_synack_rtt_meas(sk, req);
+
+		if (req) {
+			tcp_rcv_synrecv_state_fastopen(sk);
+		} else {
+			tcp_try_undo_spurious_syn(sk);
+			tp->retrans_stamp = 0;
+			tcp_init_transfer(sk, BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB);
+			WRITE_ONCE(tp->copied_seq, tp->rcv_nxt);
+		}
+		smp_mb();
+		tcp_set_state(sk, TCP_ESTABLISHED);
+		sk->sk_state_change(sk);
+
+		/* Note, that this wakeup is only for marginal crossed SYN case.
+		 * Passively open sockets are not waked up, because
+		 * sk->sk_sleep == NULL and sk->sk_socket == NULL.
+		 */
+		if (sk->sk_socket)
+			sk_wake_async(sk, SOCK_WAKE_IO, POLL_OUT);
+
+		tp->snd_una = TCP_SKB_CB(skb)->ack_seq;
+		tp->snd_wnd = ntohs(th->window) << tp->rx_opt.snd_wscale;
+		tcp_init_wl(tp, TCP_SKB_CB(skb)->seq);
+
+		if (tp->rx_opt.tstamp_ok)
+			tp->advmss -= TCPOLEN_TSTAMP_ALIGNED;
+
+		if (!inet_csk(sk)->icsk_ca_ops->cong_control)
+			tcp_update_pacing_rate(sk);
+
+		/* Prevent spurious tcp_cwnd_restart() on first data packet */
+		tp->lsndtime = tcp_jiffies32;
+
+		tcp_initialize_rcv_mss(sk);
+		tcp_fast_path_on(tp);
+		break;
+		...
 ```
