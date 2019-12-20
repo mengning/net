@@ -430,3 +430,114 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb)
 		break;
 		...
 ```
+其中TCP_LISTEN状态时接到SYN就可以通过acceptable = icsk->icsk_af_ops->conn_request(sk, skb) >= 0;将连接加入accpet队列
+
+* [ipv4_specific](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/net/ipv4/tcp_ipv4.c#L2050)
+```
+const struct inet_connection_sock_af_ops ipv4_specific = {
+	.queue_xmit	   = ip_queue_xmit,
+	.send_check	   = tcp_v4_send_check,
+	.rebuild_header	   = inet_sk_rebuild_header,
+	.sk_rx_dst_set	   = inet_sk_rx_dst_set,
+	.conn_request	   = tcp_v4_conn_request,
+	.syn_recv_sock	   = tcp_v4_syn_recv_sock,
+	.net_header_len	   = sizeof(struct iphdr),
+	.setsockopt	   = ip_setsockopt,
+	.getsockopt	   = ip_getsockopt,
+	.addr2sockaddr	   = inet_csk_addr2sockaddr,
+	.sockaddr_len	   = sizeof(struct sockaddr_in),
+#ifdef CONFIG_COMPAT
+	.compat_setsockopt = compat_ip_setsockopt,
+	.compat_getsockopt = compat_ip_getsockopt,
+#endif
+	.mtu_reduced	   = tcp_v4_mtu_reduced,
+};
+EXPORT_SYMBOL(ipv4_specific);
+```
+* [tcp_v4_init_sock](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/net/ipv4/tcp_ipv4.c#L2082)
+```
+/* NOTE: A lot of things set to zero explicitly by call to
+ *       sk_alloc() so need not be done here.
+ */
+static int tcp_v4_init_sock(struct sock *sk)
+{
+	struct inet_connection_sock *icsk = inet_csk(sk);
+
+	tcp_init_sock(sk);
+
+	icsk->icsk_af_ops = &ipv4_specific;
+
+#ifdef CONFIG_TCP_MD5SIG
+	tcp_sk(sk)->af_specific = &tcp_sock_ipv4_specific;
+#endif
+
+	return 0;
+}
+```
+* [tcp_v4_conn_request](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/net/ipv4/tcp_ipv4.c#L1391)
+```
+int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb)
+{
+	/* Never answer to SYNs send to broadcast or multicast */
+	if (skb_rtable(skb)->rt_flags & (RTCF_BROADCAST | RTCF_MULTICAST))
+		goto drop;
+
+	return tcp_conn_request(&tcp_request_sock_ops,
+				&tcp_request_sock_ipv4_ops, sk, skb);
+
+drop:
+	tcp_listendrop(sk);
+	return 0;
+}
+EXPORT_SYMBOL(tcp_v4_conn_request);
+```
+* [tcp_conn_request](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/net/ipv4/tcp_input.c#L6552)
+```
+int tcp_conn_request(struct request_sock_ops *rsk_ops,
+		     const struct tcp_request_sock_ops *af_ops,
+		     struct sock *sk, struct sk_buff *skb)
+{
+	...
+	if (fastopen_sk) {
+		af_ops->send_synack(fastopen_sk, dst, &fl, req,
+				    &foc, TCP_SYNACK_FASTOPEN);
+		/* Add the child socket directly into the accept queue */
+		if (!inet_csk_reqsk_queue_add(sk, req, fastopen_sk)) {
+			reqsk_fastopen_remove(fastopen_sk, req, false);
+			bh_unlock_sock(fastopen_sk);
+			sock_put(fastopen_sk);
+			goto drop_and_free;
+		}
+		sk->sk_data_ready(sk);
+		bh_unlock_sock(fastopen_sk);
+		sock_put(fastopen_sk);
+	} else {
+		tcp_rsk(req)->tfo_listener = false;
+		if (!want_cookie)
+			inet_csk_reqsk_queue_hash_add(sk, req,
+				tcp_timeout_init((struct sock *)req));
+		af_ops->send_synack(sk, dst, &fl, req, &foc,
+				    !want_cookie ? TCP_SYNACK_NORMAL :
+						   TCP_SYNACK_COOKIE);
+		if (want_cookie) {
+			reqsk_free(req);
+			return 0;
+		}
+	}
+	...
+```
+* [inet_csk_reqsk_queue_hash_add](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/net/ipv4/inet_connection_sock.c#L765)和[inet_csk_reqsk_queue_added](https://github.com/torvalds/linux/blob/81160dda9a7aad13c04e78bb2cfd3c4630e3afab/include/net/inet_connection_sock.h#L272)
+```
+void inet_csk_reqsk_queue_hash_add(struct sock *sk, struct request_sock *req,
+				   unsigned long timeout)
+{
+	reqsk_queue_hash_req(req, timeout);
+	inet_csk_reqsk_queue_added(sk);
+}
+```
+```
+static inline void inet_csk_reqsk_queue_added(struct sock *sk)
+{
+	reqsk_queue_added(&inet_csk(sk)->icsk_accept_queue);
+}
+```
