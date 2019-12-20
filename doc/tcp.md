@@ -253,4 +253,83 @@ TCP/IP协议栈的初始化过程是在[inet_init函数](http://codelab.shiyanlo
 ```
 其中的handler被赋值为tcp_v4_rcv，符合底层更一般化上层更具体化的协议设计的一般规律，暂时我们聚焦在TCP协议不准备深入到网络底层代码，但我们可以想象底层网络代码接到数据需要找到合适的处理数据的上层代码来负责处理，那么用handler函数指针来处理就很符合代码逻辑。到这里我们就找到TCP协议中负责接收处理数据的入口，接收TCP连接请求及进行三次握手处理过程应该也是在这里为起点，那么从tcp_v4_rcv应该能够找到对SYN/ACK标志的处理（三次握手），连接请求建立后并将连接放入accept的等待队列。
 
-接下来读者可以进一步深入到三次握手过程中携带SYN/ACK标志的数据收发过程（tcp_transmit_skb和tcp_v4_rcv）以及连接建立成功后放到accpet队列的代码，乃至正常数据的收发过程和关闭连接的过程，这些都需要深入理解TCP协议标准的细节才能读懂代码，感兴趣的读者可以可以对照[TCP协议标准](https://www.ietf.org/rfc/rfc793.txt)深入理解代码，本专栏将从Linux网络核心的角度从架构上整体理解，暂时不去深入TCP协议的代码细节。
+接下来读者可以进一步深入到三次握手过程中携带SYN/ACK标志的数据收发过程（tcp_transmit_skb和tcp_v4_rcv）以及连接建立成功后放到accpet队列的代码，乃至正常数据的收发过程和关闭连接的过程，这些都需要深入理解TCP协议标准的细节才能读懂代码，读者可以可以对照[TCP协议标准](https://www.ietf.org/rfc/rfc793.txt)深入理解代码。
+
+
+* [tcp_v4_rcv](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/net/ipv4/tcp_ipv4.c#L1806)
+```
+int tcp_v4_rcv(struct sk_buff *skb)
+{
+  ...
+  th = (const struct tcphdr *)skb->data;
+	iph = ip_hdr(skb);
+lookup:
+	sk = __inet_lookup_skb(&tcp_hashinfo, skb, __tcp_hdrlen(th), th->source,
+			       th->dest, sdif, &refcounted);
+  ...
+process:
+	if (sk->sk_state == TCP_TIME_WAIT)
+		goto do_time_wait;
+
+	if (sk->sk_state == TCP_NEW_SYN_RECV) {
+    ...
+  }
+  ...
+	if (sk->sk_state == TCP_LISTEN) {
+		ret = tcp_v4_do_rcv(sk, skb);
+		goto put_and_return;
+	}
+  ...
+	if (!sock_owned_by_user(sk)) {
+		skb_to_free = sk->sk_rx_skb_cache;
+		sk->sk_rx_skb_cache = NULL;
+		ret = tcp_v4_do_rcv(sk, skb);
+	} else {
+		if (tcp_add_backlog(sk, skb))
+			goto discard_and_relse;
+		skb_to_free = NULL;
+	}
+  ...
+do_time_wait:
+	if (!xfrm4_policy_check(NULL, XFRM_POLICY_IN, skb)) {
+		inet_twsk_put(inet_twsk(sk));
+		goto discard_it;
+	}
+
+	tcp_v4_fill_cb(skb, iph, th);
+
+	if (tcp_checksum_complete(skb)) {
+		inet_twsk_put(inet_twsk(sk));
+		goto csum_error;
+	}
+	switch (tcp_timewait_state_process(inet_twsk(sk), skb, th)) {
+	case TCP_TW_SYN: {
+		struct sock *sk2 = inet_lookup_listener(dev_net(skb->dev),
+							&tcp_hashinfo, skb,
+							__tcp_hdrlen(th),
+							iph->saddr, th->source,
+							iph->daddr, th->dest,
+							inet_iif(skb),
+							sdif);
+		if (sk2) {
+			inet_twsk_deschedule_put(inet_twsk(sk));
+			sk = sk2;
+			tcp_v4_restore_cb(skb);
+			refcounted = false;
+			goto process;
+		}
+	}
+		/* to ACK */
+		/* fall through */
+	case TCP_TW_ACK:
+		tcp_v4_timewait_ack(sk, skb);
+		break;
+	case TCP_TW_RST:
+		tcp_v4_send_reset(sk, skb);
+		inet_twsk_deschedule_put(inet_twsk(sk));
+		goto discard_it;
+	case TCP_TW_SUCCESS:;
+	}
+	goto discard_it;
+}
+```
