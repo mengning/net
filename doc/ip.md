@@ -152,6 +152,38 @@ shiyanlou:~/ $
 234	return -ENETUNREACH;
 235}
 ```
+[5.x版本的fib_lookup函数](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/include/net/ip_fib.h#L294) - [fib_table_lookup](https://github.com/torvalds/linux/blob/386403a115f95997c2715691226e11a7b5cffcfd/net/ipv4/fib_trie.c#L1314)
+
+[struct flowi4](https://github.com/torvalds/linux/blob/63bdf4284c38a48af21745ceb148a087b190cd21/include/net/flow.h#L70)
+```
+struct flowi4 {
+	struct flowi_common	__fl_common;
+#define flowi4_oif		__fl_common.flowic_oif
+#define flowi4_iif		__fl_common.flowic_iif
+#define flowi4_mark		__fl_common.flowic_mark
+#define flowi4_tos		__fl_common.flowic_tos
+#define flowi4_scope		__fl_common.flowic_scope
+#define flowi4_proto		__fl_common.flowic_proto
+#define flowi4_flags		__fl_common.flowic_flags
+#define flowi4_secid		__fl_common.flowic_secid
+#define flowi4_tun_key		__fl_common.flowic_tun_key
+#define flowi4_uid		__fl_common.flowic_uid
+#define flowi4_multipath_hash	__fl_common.flowic_multipath_hash
+
+	/* (saddr,daddr) must be grouped, same order as in IP header */
+	__be32			saddr;
+	__be32			daddr;
+
+	union flowi_uli		uli;
+#define fl4_sport		uli.ports.sport
+#define fl4_dport		uli.ports.dport
+#define fl4_icmp_type		uli.icmpt.type
+#define fl4_icmp_code		uli.icmpt.code
+#define fl4_ipsec_spi		uli.spi
+#define fl4_mh_type		uli.mht.type
+#define fl4_gre_key		uli.gre_key
+} __attribute__((__aligned__(BITS_PER_LONG/8)));
+```
 有兴趣的读者可以进一步阅读或跟踪代码，如下为在[实验三中MenuOS系统](https://www.shiyanlou.com/courses/1198)上跟踪到fib_lookup函数时的调用栈。
 ```
 2112		if (fib_lookup(net, fl4, &res)) {
