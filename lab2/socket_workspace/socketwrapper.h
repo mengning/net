@@ -4,8 +4,6 @@
 /*                                                                  */
 /*  FILE NAME             :  socketwraper.h                         */
 /*  PRINCIPAL AUTHOR      :  Mengning                               */
-/*  SUBSYSTEM NAME        :  ChatSys                                */
-/*  MODULE NAME           :  ChatSys                                */
 /*  LANGUAGE              :  C                                      */
 /*  TARGET ENVIRONMENT    :  ANY                                    */
 /*  DATE OF FIRST RELEASE :  2010/10/18                             */
@@ -31,9 +29,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>	/* gethostbyname */
 
-/* ChatSys Socket  - Standard Socket Call Mapping Definition */
-#define  Socket(x,y,z)    		 socket(x,y,z)                 
-#define  Bind(x,y,z)     		 bind(x,y,z)                   
+/* Standard Socket Call Mapping Definition */
+#define  Socket(x,y,z)    		   socket(x,y,z)                 
+#define  Bind(x,y,z)     		     bind(x,y,z)                   
 #define  Connect(x,y,z)          connect(x,y,z)         
 #define  Listen(x,y)             listen(x,y)            
 #define  Read(x,y,z )            read(x,y,z)            
@@ -46,9 +44,10 @@
 #define  Sendto(a,b,c,d,e,f)     sendto(a,b,c,d,e,f)    
 #define  Sendmsg(a,b,c)          sendmsg(a,b,c)         
 #define  Close(a)                close(a) 
-/* ¸ñÊ½×ª»» */
-#define  Htons(a)				 htons(a)
-#define	 Inet_ntoa(a)			 inet_ntoa(a)
+
+/* byte order trans */
+#define  Htons(a)				         htons(a)
+#define	 Inet_ntoa(a)			       inet_ntoa(a)
 
 /* Name */
 #define	 Gethostbyname(a)		 gethostbyname(a)	 
