@@ -27,11 +27,11 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <netdb.h>	/* gethostbyname */
+#include <netdb.h>               /* gethostbyname */
 
 /* Standard Socket Call Mapping Definition */
-#define  Socket(x,y,z)    		   socket(x,y,z)                 
-#define  Bind(x,y,z)     		     bind(x,y,z)                   
+#define  Socket(x,y,z)           socket(x,y,z)                 
+#define  Bind(x,y,z)             bind(x,y,z)                   
 #define  Connect(x,y,z)          connect(x,y,z)         
 #define  Listen(x,y)             listen(x,y)            
 #define  Read(x,y,z )            read(x,y,z)            
@@ -46,11 +46,12 @@
 #define  Close(a)                close(a) 
 
 /* byte order trans */
-#define  Htons(a)				         htons(a)
-#define	 Inet_ntoa(a)			       inet_ntoa(a)
+#define  Htons(a)                htons(a)
+#define  Inet_ntoa(a)            inet_ntoa(a)
 
 /* Name */
-#define	 Gethostbyname(a)		 gethostbyname(a)	 
+#define  Gethostbyname(a)        gethostbyname(a)
+
 #endif /* _SOCKET_WRAPER_H_ */
 
 
