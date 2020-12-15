@@ -24,7 +24,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 
 ### socket系统调用
 
-在我们的实验环境MenuOS中，socket接口是通过[112号系统调用](http://codelab.shiyanlou.com/xref/linux-3.18.6/arch/x86/syscalls/syscall_32.tbl#111) 进入内核的.
+在我们的实验环境MenuOS中，socket接口是通过[112号系统调用](http://codelab.shiyanlou.com/xref/linux-src/arch/x86/syscalls/syscall_32.tbl#111) 进入内核的.
 
 ```
 102	i386	socketcall		sys_socketcall			compat_sys_socketcall
@@ -36,7 +36,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 
 ### socket接口层数据收发代码分析
 
-[sys_socketcall函数](http://codelab.shiyanlou.com/xref/linux-3.18.6/net/socket.c#2484)中通过参数call来指明具体是哪一个socket接口，比如send函数对应SYS_SEND = 9，recv函数对应的SYS_RECV = 10。
+[sys_socketcall函数](http://codelab.shiyanlou.com/xref/linux-src/net/socket.c#2484)中通过参数call来指明具体是哪一个socket接口，比如send函数对应SYS_SEND = 9，recv函数对应的SYS_RECV = 10。
 ```
 2484/*
 2485 *	System call vectors.
@@ -57,7 +57,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 ...
 2595}
 ```
-#### send函数对应执行[sys_send函数及sys_sendto函数](http://codelab.shiyanlou.com/xref/linux-3.18.6/net/socket.c#1777)
+#### send函数对应执行[sys_send函数及sys_sendto函数](http://codelab.shiyanlou.com/xref/linux-src/net/socket.c#1777)
 ```
 1777/*
 1778 *	Send a datagram to a given address. We move the address into kernel
@@ -84,7 +84,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 1833	return sys_sendto(fd, buff, len, flags, NULL, 0);
 1834}
 ```
-其中sock_sendmsg最终调用了函数指针sock->ops->sendmsg，具体代码见[net/socket.c#633](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/socket.c#633) ，如下：
+其中sock_sendmsg最终调用了函数指针sock->ops->sendmsg，具体代码见[net/socket.c#633](https://github.com/torvalds/linux/blob/v5.4/net/socket.c#633) ，如下：
 ```
 633static inline int __sock_sendmsg_nosec(struct kiocb *iocb, struct socket *sock,
 634				       struct msghdr *msg, size_t size)
@@ -122,7 +122,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 666}
 667EXPORT_SYMBOL(sock_sendmsg);
 ```
-#### recv函数对应的[sys_recv函数及sys_recvfrom函数](http://codelab.shiyanlou.com/xref/linux-3.18.6/net/socket.c#1836)
+#### recv函数对应的[sys_recv函数及sys_recvfrom函数](http://codelab.shiyanlou.com/xref/linux-src/net/socket.c#1836)
 ```
 1836/*
 1837 *	Receive a frame from the socket and optionally record the address of the
@@ -149,7 +149,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 1892	return sys_recvfrom(fd, ubuf, size, flags, NULL, NULL);
 1893}
 ```
-其中sock_recvmsg最终调用了函数指针sock->ops->recvmsg，具体代码见[net/socket.c#779](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/socket.c#779) ，如下：
+其中sock_recvmsg最终调用了函数指针sock->ops->recvmsg，具体代码见[net/socket.c#779](https://github.com/torvalds/linux/blob/v5.4/net/socket.c#779) ，如下：
 ```
 779static inline int __sock_recvmsg_nosec(struct kiocb *iocb, struct socket *sock,
 780				       struct msghdr *msg, size_t size, int flags)
@@ -191,7 +191,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 ```
 ### TCP协议栈数据收发代码分析
 
-上述提及了两个函数指针sock->ops->sendmsg和sock->ops->recvmsg在我们的lab3实验中对应着tcp_sendmsg和tcp_recvmsg函数，与前面文章中介绍的connect及TCP三次握手一样，tcp_sendmsg和tcp_recvmsg函数是通过如下[struct proto tcp_prot结构体变量](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_ipv4.c#2380)赋值给对应函数指针的:
+上述提及了两个函数指针sock->ops->sendmsg和sock->ops->recvmsg在我们的lab3实验中对应着tcp_sendmsg和tcp_recvmsg函数，与前面文章中介绍的connect及TCP三次握手一样，tcp_sendmsg和tcp_recvmsg函数是通过如下[struct proto tcp_prot结构体变量](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_ipv4.c#2380)赋值给对应函数指针的:
 ```
 2380struct proto tcp_prot = {
 2381	.name			= "TCP",
@@ -208,7 +208,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 
 由于TCP是面向连接的提供可靠的字节流传输服务，TCP的发送和接收涉及比较复杂的滑动窗口协议和确认重传机制，具体分析发送和接收的细节会比较复杂，我们这里为了简化期间只提纲挈领提及一些关键的函数。
 
-#### [tcp_sendmsg](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp.c#1085)
+#### [tcp_sendmsg](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp.c#1085)
 
 ```
 1085int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
@@ -243,7 +243,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 1320}
 1321EXPORT_SYMBOL(tcp_sendmsg);
 ```
-其中的tcp_push和tcp_push_one都会最终通过如下代码调用[tcp_write_xmit函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_output.c#1926)
+其中的tcp_push和tcp_push_one都会最终通过如下代码调用[tcp_write_xmit函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_output.c#1926)
 ```
 2195/* Push out any pending frames which were held back due to
 2196 * TCP_CORK or attempt at coalescing tiny packets.
@@ -276,7 +276,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 2223	tcp_write_xmit(sk, mss_now, TCP_NAGLE_PUSH, 1, sk->sk_allocation);
 2224}
 ```
-[tcp_write_xmit函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_output.c#1926)进一步调用[tcp_transmit_skb函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_output.c#876)
+[tcp_write_xmit函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_output.c#1926)进一步调用[tcp_transmit_skb函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_output.c#876)
 ```
 876/* This routine actually transmits TCP packets queued in by
 877 * tcp_do_sendmsg().  This is used by both the initial
@@ -312,9 +312,9 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 1784};
 1785EXPORT_SYMBOL(ipv4_specific);
 ```
-#### [tcp_recvmsg](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp.c#1577)
+#### [tcp_recvmsg](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp.c#1577)
 
-[tcp_recvmsg](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp.c#1577)函数对应用户态recv函数的表现：阻塞函数直到接收到数据（len>0）返回接收到的数据。
+[tcp_recvmsg](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp.c#1577)函数对应用户态recv函数的表现：阻塞函数直到接收到数据（len>0）返回接收到的数据。
 
 ```
 1577/*
@@ -351,7 +351,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 1914}
 1915EXPORT_SYMBOL(tcp_recvmsg);
 ```
-这里的[tcp_prequeue_process函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp.c#1454)是通过sk_backlog_rcv函数从接收队列中出队skb，那么按照数据接收数据流的逻辑上，一定存在将将接收到的skb数据入队的地方。
+这里的[tcp_prequeue_process函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp.c#1454)是通过sk_backlog_rcv函数从接收队列中出队skb，那么按照数据接收数据流的逻辑上，一定存在将将接收到的skb数据入队的地方。
 
 ```
 1454static void tcp_prequeue_process(struct sock *sk)
@@ -372,7 +372,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 ...
 1746}
 ```
-其中[tcp_v4_do_rcv函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_ipv4.c#1427)调用了tcp_child_process函数
+其中[tcp_v4_do_rcv函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_ipv4.c#1427)调用了tcp_child_process函数
 
 ```
 1427int tcp_v4_do_rcv(struct sock *sk, struct sk_buff *skb)
@@ -385,7 +385,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 1486}
 1487EXPORT_SYMBOL(tcp_v4_do_rcv);
 ```
-[tcp_child_process函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_minisocks.c#755)调用了__sk_add_backlog将skb入队，与前面sk_backlog_rcv出队对应。
+[tcp_child_process函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_minisocks.c#755)调用了__sk_add_backlog将skb入队，与前面sk_backlog_rcv出队对应。
 ```
 755/*
 756 * Queue segment on the new socket if the new socket is active,
@@ -410,15 +410,15 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 ```
 ### IP协议栈数据收发代码分析
 
-从TCP协议栈数据收发代码分析中我们知道IP发送数据是通过ip_queue_xmit，而二层数据链路层接收IP数据包回调IP协议栈进一步处理接收数据是通过ip_rcv函数，初始化[函数指针func](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/af_inet.c#1669) 的代码如下：
+从TCP协议栈数据收发代码分析中我们知道IP发送数据是通过ip_queue_xmit，而二层数据链路层接收IP数据包回调IP协议栈进一步处理接收数据是通过ip_rcv函数，初始化[函数指针func](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/af_inet.c#1669) 的代码如下：
 ```
 1669static struct packet_type ip_packet_type __read_mostly = {
 1670	.type = cpu_to_be16(ETH_P_IP),
 1671	.func = ip_rcv,
 1672};
 ```
-#### [ip_queue_xmit](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#362)
-[ip_queue_xmit](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#362)函数摘录如下：
+#### [ip_queue_xmit](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_output.c#362)
+[ip_queue_xmit](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_output.c#362)函数摘录如下：
 ```
 362/* Note: skb->sk can be different from sk, in case of tunnels */
 363int ip_queue_xmit(struct sock *sk, struct sk_buff *skb, struct flowi *fl)
@@ -429,14 +429,14 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 448}
 449EXPORT_SYMBOL(ip_queue_xmit);
 ```
-其中的[ip_local_out内联函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/include/net/ip.h#115) 如下：
+其中的[ip_local_out内联函数](https://github.com/torvalds/linux/blob/v5.4/include/net/ip.h#115) 如下：
 ```
 115static inline int ip_local_out(struct sk_buff *skb)
 116{
 117	return ip_local_out_sk(skb->sk, skb);
 118}
 ```
-上面的[ip_local_out_sk函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#94)最终通过nf_hook提供的回调机制调用了dst_output函数。
+上面的[ip_local_out_sk函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_output.c#94)最终通过nf_hook提供的回调机制调用了dst_output函数。
 ```
 94int __ip_local_out(struct sk_buff *skb)
 95{
@@ -460,7 +460,7 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 113}
 114EXPORT_SYMBOL_GPL(ip_local_out_sk);
 ```
-[dst_output函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/include/net/dst.h#455)最终调用了函数指针skb_dst(skb)->output(sk, skb)：
+[dst_output函数](https://github.com/torvalds/linux/blob/v5.4/include/net/dst.h#455)最终调用了函数指针skb_dst(skb)->output(sk, skb)：
 ```
 455/* Output packet to network from transport.  */
 456static inline int dst_output_sk(struct sock *sk, struct sk_buff *skb)
@@ -472,19 +472,19 @@ extern ssize_t recv (int __fd, void *__buf, size_t __n, int __flags);
 462	return dst_output_sk(skb->sk, skb);
 463}
 ```
-skb_dst(skb)返回的是[struct dst_entry数据结构](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/include/net/dst.h#33)指针，我们也就找到了output函数指针。
+skb_dst(skb)返回的是[struct dst_entry数据结构](https://github.com/torvalds/linux/blob/v5.4/include/net/dst.h#33)指针，我们也就找到了output函数指针。
 ```
 33struct dst_entry {
 ...
 47	int			(*input)(struct sk_buff *);
 48	int			(*output)(struct sock *sk, struct sk_buff *skb);
 ```
-上述input和output函数指针在IP协议栈及路由表（ip_init及ip_rt_init）初始化过程被赋值如下，见[linux-3.18.6/net/ipv4/route.c#1610](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/route.c#1610)。
+上述input和output函数指针在IP协议栈及路由表（ip_init及ip_rt_init）初始化过程被赋值如下，见[linux-src/net/ipv4/route.c#1610](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/route.c#1610)。
 ```
 1610	rth->dst.input = ip_forward;
 1611	rth->dst.output = ip_output;
 ```
-[ip_output函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#334)通过NF_HOOK_COND方式调用ip_finish_output
+[ip_output函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_output.c#334)通过NF_HOOK_COND方式调用ip_finish_output
 ```
 334int ip_output(struct sock *sk, struct sk_buff *skb)
 335{
@@ -500,7 +500,7 @@ skb_dst(skb)返回的是[struct dst_entry数据结构](http://codelab.shiyanlou.
 345			    !(IPCB(skb)->flags & IPSKB_REROUTED));
 346}
 ```
-[ip_finish_output函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#ip_finish_output)又进一步调用ip_finish_output2
+[ip_finish_output函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_output.c#ip_finish_output)又进一步调用ip_finish_output2
 ```
 256static int ip_finish_output(struct sk_buff *skb)
 257{
@@ -520,7 +520,7 @@ skb_dst(skb)返回的是[struct dst_entry数据结构](http://codelab.shiyanlou.
 271	return ip_finish_output2(skb);
 272}
 ```
-[ip_finish_output2函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#166)有一段关键代码，这里获取了路由查询的结果nexthop，并将nexthop作为参数由__ipv4_neigh_lookup_noref函数进行ARP解析。
+[ip_finish_output2函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_output.c#166)有一段关键代码，这里获取了路由查询的结果nexthop，并将nexthop作为参数由__ipv4_neigh_lookup_noref函数进行ARP解析。
 ```
 166static inline int ip_finish_output2(struct sk_buff *skb)
 167{
@@ -542,7 +542,7 @@ skb_dst(skb)返回的是[struct dst_entry数据结构](http://codelab.shiyanlou.
 409	return dev_queue_xmit(skb);
 410}
 ```
-#### [ip_rcv](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_input.c#373)
+#### [ip_rcv](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_input.c#373)
 
 ```
 373/*
@@ -556,7 +556,7 @@ skb_dst(skb)返回的是[struct dst_entry数据结构](http://codelab.shiyanlou.
 ...
 464}
 ```
-[ip_rcv](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_input.c#373)函数通过NF_HOOK方式回调[ip_rcv_finish函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_input.c#312)
+[ip_rcv](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_input.c#373)函数通过NF_HOOK方式回调[ip_rcv_finish函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_input.c#312)
 ```
 312static int ip_rcv_finish(struct sk_buff *skb)
 313{
@@ -575,7 +575,7 @@ skb_dst(skb)返回的是[struct dst_entry数据结构](http://codelab.shiyanlou.
 ...
 371}
 ```
-[ip_rcv_finish函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_input.c#312)最后调用了[dst_input函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/include/net/dst.h#465)，进一步调用了函数指针skb_dst(skb)->input(skb)。
+[ip_rcv_finish函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_input.c#312)最后调用了[dst_input函数](https://github.com/torvalds/linux/blob/v5.4/include/net/dst.h#465)，进一步调用了函数指针skb_dst(skb)->input(skb)。
 ```
 465/* Input packet from network to transport.  */
 466static inline int dst_input(struct sk_buff *skb)
@@ -593,7 +593,7 @@ rth->dst.input = ip_forward;
 ```
 rth->dst.input= ip_local_deliver;
 ```
-本文以实验三lab3的代码为例，我们关注的是第二种情况，即[ip_local_deliver函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_input.c#242):
+本文以实验三lab3的代码为例，我们关注的是第二种情况，即[ip_local_deliver函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_input.c#242):
 
 ```
 242/*
@@ -606,7 +606,7 @@ rth->dst.input= ip_local_deliver;
 257		       ip_local_deliver_finish);
 258}
 ```
-[ip_local_deliver函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_input.c#242)通过NF_HOOK方式回调[ip_local_deliver_finish函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_input.c#190)：
+[ip_local_deliver函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_input.c#242)通过NF_HOOK方式回调[ip_local_deliver_finish函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_input.c#190)：
 ```
 190static int ip_local_deliver_finish(struct sk_buff *skb)
 191{
@@ -615,7 +615,7 @@ rth->dst.input= ip_local_deliver;
 ...
 240}
 ```
-至此调用了函数指针ipprot->handler(skb)，前面TCP协议栈接收数据的起点tcp_v4_rcv，其被如下代码初始化为handler函数指针，留心的读者应该还记得[TCP/IP协议栈的初始化inet_init函数中有相关初始化代码](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/af_inet.c#1716)
+至此调用了函数指针ipprot->handler(skb)，前面TCP协议栈接收数据的起点tcp_v4_rcv，其被如下代码初始化为handler函数指针，留心的读者应该还记得[TCP/IP协议栈的初始化inet_init函数中有相关初始化代码](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/af_inet.c#1716)
 ```
 1498static const struct net_protocol tcp_protocol = {
 1499	.early_demux	=	tcp_v4_early_demux,
@@ -628,7 +628,7 @@ rth->dst.input= ip_local_deliver;
 参考[9.以太网数据帧的格式及数据链路层发送和接收数据帧的处理过程分析](http://blog.51cto.com/cloumn/blog/805) 可知IP协议栈通过dev_queue_xmit向下层发送数据，netif_rx负责从网络设备驱动程序中接收数据。
 
 由于[9.以太网数据帧的格式及数据链路层发送和接收数据帧的处理过程分析](http://blog.51cto.com/cloumn/blog/805) 文章中已经进行了详实的代码分析这里略去部分内容，仅列举loopback驱动程序的关键代码，以便将实验三lab3中本机TCP客户端和TCP服务器的通信过程串连起来。
-在lo回环网络设备的情况下，dev_queue_xmit函数最终会调用loopback网络设备驱动程序中的[loopback_xmit函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/drivers/net/loopback.c#67)发送数据，[loopback_xmit函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/drivers/net/loopback.c#67)中直接调用了netif_rx负责接收数据，在如下代码中也就形成了回环，这就是loopback回环设备名称的由来。
+在lo回环网络设备的情况下，dev_queue_xmit函数最终会调用loopback网络设备驱动程序中的[loopback_xmit函数](https://github.com/torvalds/linux/blob/v5.4/drivers/net/loopback.c#67)发送数据，[loopback_xmit函数](https://github.com/torvalds/linux/blob/v5.4/drivers/net/loopback.c#67)中直接调用了netif_rx负责接收数据，在如下代码中也就形成了回环，这就是loopback回环设备名称的由来。
 ```
 67/*
 68 * The higher levels take care of making this non-reentrant (it's

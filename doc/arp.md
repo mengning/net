@@ -36,7 +36,7 @@
 
 ### ARP缓存的数据结构及初始化过程
 
-参照tcp和ip协议的的初始化过程类似，查找arp初始化相关代码，见[inet_init](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/af_inet.c#1730)函数：
+参照tcp和ip协议的的初始化过程类似，查找arp初始化相关代码，见[inet_init](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/af_inet.c#1730)函数：
 
 ```
 1730	/*
@@ -45,7 +45,7 @@
 1733
 1734	arp_init();
 ```
-[arp_init](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/arp.c#1293)函数如下，其中包括ARP缓存的初始化。
+[arp_init](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/arp.c#1293)函数如下，其中包括ARP缓存的初始化。
 ```
 1293void __init arp_init(void)
 1294{
@@ -61,7 +61,7 @@
 ```
 ### ARP协议如何更新ARP缓存
 
-ARP协议的实现代码量不大，主要集中在[arp.c文件](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/arp.c#1293)中。
+ARP协议的实现代码量不大，主要集中在[arp.c文件](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/arp.c#1293)中。
 
 ### 创建和发送一个ARP封包
 
@@ -136,7 +136,7 @@ ARP协议的实现代码量不大，主要集中在[arp.c文件](http://codelab.
 975
 976	return NF_HOOK(NFPROTO_ARP, NF_ARP_IN, skb, dev, NULL, arp_process);
 ```
-具体的ARP协议解析过程主要集中在[arp_process函数中](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/arp.c#arp_process) ,有兴趣的读者可以仔细研究。
+具体的ARP协议解析过程主要集中在[arp_process函数中](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/arp.c#arp_process) ,有兴趣的读者可以仔细研究。
 
 ```
 718/*

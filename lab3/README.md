@@ -1,7 +1,7 @@
 ## 编译构建调试Linux系统
 
 ### 实验：编译构建调试Linux系统
-自定搭建环境Based on Ubuntu 18.04 & linux-5.0.1，或使用在线环境：[实验楼虚拟机](https://www.shiyanlou.com/courses/1198)&[linux-3.18.6](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/)
+自定搭建环境Based on Ubuntu 18.04 & linux-5.0.1，或使用在线环境：[实验楼虚拟机](https://www.shiyanlou.com/courses/1198)&[linux-src](https://github.com/torvalds/linux/blob/v5.4/)
 
 
 ```

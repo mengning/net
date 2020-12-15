@@ -53,7 +53,7 @@ shiyanlou:~/ $
 
 ## IP协议的初始化
 
-[IP协议的初始化函数ip_init](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/af_inet.c#1740)与TCP一样也是在inet_init函数中被调用的，如/linux-3.18.6/net/ipv4/af_inet.c中1740行代码处。
+[IP协议的初始化函数ip_init](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/af_inet.c#1740)与TCP一样也是在inet_init函数中被调用的，如/linux-src/net/ipv4/af_inet.c中1740行代码处。
 ```
 1674static int __init inet_init(void)
 1675{
@@ -117,7 +117,7 @@ shiyanlou:~/ $
 1796
 1797fs_initcall(inet_init);
 ```
-路由表的结构和初始化过程，ip协议初始化ip_init过程中包含路由表的初始化ip_rt_init/ip_fib_init，主要代码见route.c及fib*.c。[ip_init函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#1602)主要做了三方面工作：
+路由表的结构和初始化过程，ip协议初始化ip_init过程中包含路由表的初始化ip_rt_init/ip_fib_init，主要代码见route.c及fib*.c。[ip_init函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_output.c#1602)主要做了三方面工作：
 * ip_rt_init() 初始化路由缓存,通过哈希结构提供快速获取目的IP地址的下一跳（Next Hop）访问, 以及初始化作为路由表内部表示形式的FIB (Forwarding Information Base) 
 * ip_rt_init() 还调用ip_fib_init() 初始化上层的路由相关数据结构
 * inet_initpeers()初始化AVL tree用于跟踪最近有数据通信的IP peers和hosts。
@@ -135,7 +135,7 @@ shiyanlou:~/ $
 
 
 ##  查询路由表
-通过目的IP查询路由表的到下一跳的IP地址的过程, fib_lookup为起点，从[fib_lookup函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/include/net/ip_fib.h#222)这里可以进一步深入了解查询路由表的过程，当然这里需要理解路由表的数据结构和查询算法，会比较复杂。
+通过目的IP查询路由表的到下一跳的IP地址的过程, fib_lookup为起点，从[fib_lookup函数](https://github.com/torvalds/linux/blob/v5.4/include/net/ip_fib.h#222)这里可以进一步深入了解查询路由表的过程，当然这里需要理解路由表的数据结构和查询算法，会比较复杂。
 ```
 222static inline int fib_lookup(struct net *net, const struct flowi4 *flp,
 223			     struct fib_result *res)

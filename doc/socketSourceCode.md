@@ -1,12 +1,12 @@
 # Socket接口对应的Linux内核系统调用处理代码分析
 
 理解Linux内核中socket接口层的代码，找出112号系统调用socketcall的内核处理函数sys_socketcall，理解socket接口函数编号和对应的socket接口内核处理函数
-通过前面构建MenuOS实验环境使得我们有方法跟踪socket接口通过系统调用进入内核代码，在我们的环境中socket接口通过[112号系统调用socketcall](http://codelab.shiyanlou.com/xref/linux-3.18.6/arch/x86/syscalls/syscall_32.tbl#111)进入内核的，具体系统调用的处理机制不是本专栏的重点，本专栏将重点放在网络部分的代码分析。
+通过前面构建MenuOS实验环境使得我们有方法跟踪socket接口通过系统调用进入内核代码，在我们的环境中socket接口通过[112号系统调用socketcall](http://codelab.shiyanlou.com/xref/linux-src/arch/x86/syscalls/syscall_32.tbl#111)进入内核的，具体系统调用的处理机制不是本专栏的重点，本专栏将重点放在网络部分的代码分析。
 
 # 112号系统调用socketcall的内核处理函数sys_socketcall
 
 
-112号系统调用socketcall的内核处理函数为sys_socketcall，函数实现见[/linux-3.18.6/net/socket.c#2492](http://codelab.shiyanlou.com/xref/linux-3.18.6/net/socket.c#2492) ，我们摘录部分代码如下：
+112号系统调用socketcall的内核处理函数为sys_socketcall，函数实现见[/linux-src/net/socket.c#2492](http://codelab.shiyanlou.com/xref/linux-src/net/socket.c#2492) ，我们摘录部分代码如下：
 
 ```
 /*
@@ -102,7 +102,7 @@
 2596
 ```
 
-在我们的实验环境中，socket接口的调用是通过给socket接口函数编号的方式通过112号系统调用来处理的。这些socket接口函数编号的宏定义见[/linux-3.18.6/include/uapi/linux/net.h#26](http://codelab.shiyanlou.com/xref/linux-3.18.6/include/uapi/linux/net.h#26)
+在我们的实验环境中，socket接口的调用是通过给socket接口函数编号的方式通过112号系统调用来处理的。这些socket接口函数编号的宏定义见[/linux-src/include/uapi/linux/net.h#26](http://codelab.shiyanlou.com/xref/linux-src/include/uapi/linux/net.h#26)
 
 ```
 26#define SYS_SOCKET	1		/* sys_socket(2)		*/
@@ -131,7 +131,7 @@
 
 # socket接口函数的内核处理函数sys_socket
 
-sys_socket内核处理函数见[/linux-3.18.6/net/socket.c#1377](http://codelab.shiyanlou.com/xref//linux-3.18.6/net/socket.c#1377) ，摘录其中的关键代码如下：
+sys_socket内核处理函数见[/linux-src/net/socket.c#1377](http://codelab.shiyanlou.com/xref//linux-src/net/socket.c#1377) ，摘录其中的关键代码如下：
 
 ```
 1377SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
@@ -143,7 +143,7 @@ sys_socket内核处理函数见[/linux-3.18.6/net/socket.c#1377](http://codelab.
 ...
 ```
 
-socket接口函数主要作用是建立socket套接字描述符，Unix-like系统非常成功的设计是将一切都抽象为文件，socket套接字也是一种特殊的文件，sock_create内部就是使用文件系统中的数据结构inode为socket套接字分配了文件描述符。socket套接字与普通的文件在内部存储结构上是一致的，甚至文件描述符和套接字描述符是通用的，但是套接字和文件还是特殊之处，因此定义了结构体struct socket，struct socket的结构体定义见[/linux-3.18.6/include/linux/net.h#105](http://codelab.shiyanlou.com/xref/linux-3.18.6/include/linux/net.h#105)，具体代码摘录如下：
+socket接口函数主要作用是建立socket套接字描述符，Unix-like系统非常成功的设计是将一切都抽象为文件，socket套接字也是一种特殊的文件，sock_create内部就是使用文件系统中的数据结构inode为socket套接字分配了文件描述符。socket套接字与普通的文件在内部存储结构上是一致的，甚至文件描述符和套接字描述符是通用的，但是套接字和文件还是特殊之处，因此定义了结构体struct socket，struct socket的结构体定义见[/linux-src/include/linux/net.h#105](http://codelab.shiyanlou.com/xref/linux-src/include/linux/net.h#105)，具体代码摘录如下：
 
 ```
 95/**
@@ -177,7 +177,7 @@ sock_create内部还根据指定的网络协议族family和protocol初始化了�
 
 # bind接口函数的内核处理函数sys_bind
 
-内核处理函数sys_bind见[/linux-3.18.6/net/socket.c#1527](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/socket.c#1527)，它的功能是绑定网络地址。
+内核处理函数sys_bind见[/linux-src/net/socket.c#1527](https://github.com/torvalds/linux/blob/v5.4/net/socket.c#1527)，它的功能是绑定网络地址。
 
 ```
 1519/*
@@ -216,7 +216,7 @@ sock_create内部还根据指定的网络协议族family和protocol初始化了�
 
 # listen接口函数的内核处理函数sys_listen
 
-内核处理函数sys_listen见[/linux-3.18.6/net/socket.c#1556](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/socket.c#1556)，具体代码如下：
+内核处理函数sys_listen见[/linux-src/net/socket.c#1556](https://github.com/torvalds/linux/blob/v5.4/net/socket.c#1556)，具体代码如下：
 
 ```
 1550/*
@@ -253,7 +253,7 @@ listen接口的主要作用是通知网络底层开始监听套接字并接收�
 
 # accept接口函数的内核处理函数sys_accept
 
-内核处理函数sys_accept的主要功能是调用sys_accept4完成的，sys_accept4见[/linux-3.18.6/net/socket.c#1589](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/socket.c#1589)，具体代码摘录如下：
+内核处理函数sys_accept的主要功能是调用sys_accept4完成的，sys_accept4见[/linux-src/net/socket.c#1589](https://github.com/torvalds/linux/blob/v5.4/net/socket.c#1589)，具体代码摘录如下：
 
 ```
 1577/*

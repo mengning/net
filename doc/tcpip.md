@@ -13,7 +13,7 @@ Linux内核初始化过程中加载TCP/IP协议栈，从start_kernel、kernel_in
 
 ### `start_kernel()` 
 
-main.c 中没有 main 函数，`start_kernel()` 相当于main函数。`start_kernel`是一切的起点，在此函数被调用之前内核代码主要是用汇编语言写的，完成硬件系统的初始化工作，为C代码的运行设置环境。由调试可得`start_kernel`在[/linux-3.18.6/init/main.c#500](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/init/main.c#500)：
+main.c 中没有 main 函数，`start_kernel()` 相当于main函数。`start_kernel`是一切的起点，在此函数被调用之前内核代码主要是用汇编语言写的，完成硬件系统的初始化工作，为C代码的运行设置环境。由调试可得`start_kernel`在[/linux-src/init/main.c#500](https://github.com/torvalds/linux/blob/v5.4/init/main.c#500)：
 
 ```
 500asmlinkage __visible void __init start_kernel(void)
@@ -27,7 +27,7 @@ main.c 中没有 main 函数，`start_kernel()` 相当于main函数。`start_ker
 ### `rest_init()`函数
 
 
-rest_init在[linux-3.18.6/init/main.c#393](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/init/main.c#393)的位置：
+rest_init在[linux-src/init/main.c#393](https://github.com/torvalds/linux/blob/v5.4/init/main.c#393)的位置：
 ```
 393static noinline void __init_refok rest_init(void)
 394{
@@ -68,7 +68,7 @@ rest_init在[linux-3.18.6/init/main.c#393](http://codelab.shiyanlou.com/source/x
 
 ###  `kernel_init`函数和do_basic_setup函数
 
- `kernel_init`函数的主要工作是夹在init用户程序，但是在加载init用户程序前通过kernel_init_freeable函数进一步做了一些初始化的工作。[`kernel_init`函数和kernel_init_freeable函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/init/main.c#934):
+ `kernel_init`函数的主要工作是夹在init用户程序，但是在加载init用户程序前通过kernel_init_freeable函数进一步做了一些初始化的工作。[`kernel_init`函数和kernel_init_freeable函数](https://github.com/torvalds/linux/blob/v5.4/init/main.c#934):
 
 ```
 930static int __ref kernel_init(void *unused)
@@ -131,7 +131,7 @@ rest_init在[linux-3.18.6/init/main.c#393](http://codelab.shiyanlou.com/source/x
 1034
 ```
 
-kernel_init_freeable函数做的一些初始化的工作与我们网络初始化有关的主要在[do_basic_setup函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/init/main.c#867)中，其中do_initcalls用一种巧妙的方式对一些子系统进行了初始化，其中包括TCP/IP网络协议栈的初始化。
+kernel_init_freeable函数做的一些初始化的工作与我们网络初始化有关的主要在[do_basic_setup函数](https://github.com/torvalds/linux/blob/v5.4/init/main.c#867)中，其中do_initcalls用一种巧妙的方式对一些子系统进行了初始化，其中包括TCP/IP网络协议栈的初始化。
 ```
 867/*
 868 * Ok, the machine is now initialized. None of the devices
@@ -156,7 +156,7 @@ kernel_init_freeable函数做的一些初始化的工作与我们网络初始化
 
 ### do_initcalls函数巧妙地对网络协议进行初始化
 
-[do_initcalls函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/init/main.c#859)是table驱动的，维护了一个initcalls的table，从而可以对每一个注册进来的初始化项目进行初始化，这个巧妙的机制可以理解成观察者模式，每一个协议子系统是一个观察者，将它的初始化入口注册进来，do_initcalls函数是被观察者负责统一调用每一个子系统的初始化函数指针。
+[do_initcalls函数](https://github.com/torvalds/linux/blob/v5.4/init/main.c#859)是table驱动的，维护了一个initcalls的table，从而可以对每一个注册进来的初始化项目进行初始化，这个巧妙的机制可以理解成观察者模式，每一个协议子系统是一个观察者，将它的初始化入口注册进来，do_initcalls函数是被观察者负责统一调用每一个子系统的初始化函数指针。
 ```
 859static void __init do_initcalls(void)
 860{
@@ -166,7 +166,7 @@ kernel_init_freeable函数做的一些初始化的工作与我们网络初始化
 864		do_initcall_level(level);
 865}
 ```
-以TCP/IP协议栈为例，[inet_init函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/af_inet.c#1674)是TCP/IP协议栈初始化的入口函数，通过fs_initcall(inet_init)将inet_init函数注册进initcalls的table。
+以TCP/IP协议栈为例，[inet_init函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/af_inet.c#1674)是TCP/IP协议栈初始化的入口函数，通过fs_initcall(inet_init)将inet_init函数注册进initcalls的table。
 ```
 1674static int __init inet_init(void)
 1675{
@@ -179,7 +179,7 @@ kernel_init_freeable函数做的一些初始化的工作与我们网络初始化
 
 我们首先将端点设在kernel_init、do_initcalls、inet_init以及do_initcalls后面的random_int_secret_init，预期这四个断点会依次触发，从而可以间接验证fs_initcall(inet_init)确实将inet_init注册进了do_initcalls并被do_initcalls调用执行了。
 
-在lab3目录下执行qemu -kernel ../../linux-3.18.6/arch/x86/boot/bzImage -initrd ../rootfs.img -s -S
+在lab3目录下执行qemu -kernel ../../linux-src/arch/x86/boot/bzImage -initrd ../rootfs.img -s -S
 ```
 shiyanlou:~/ $ cd LinuxKernel                                        [14:08:18]
 shiyanlou:LinuxKernel/ $ git clone https://github.com/mengning/linuxnet.git
@@ -196,13 +196,13 @@ shiyanlou:lab3/ (master) $ make rootfs                               [14:08:38]
 gcc -o init linktable.c menu.c main.c -m32 -static -lpthread
 find init | cpio -o -Hnewc |gzip -9 > ../rootfs.img
 1889 \u5757
-qemu -kernel ../../linux-3.18.6/arch/x86/boot/bzImage -initrd ../rootfs.img
-shiyanlou:lab3/ (master*) $ qemu -kernel ../../linux-3.18.6/arch/x86/boot/bzImage -initrd ../rootfs.img -s -S
+qemu -kernel ../../linux-src/arch/x86/boot/bzImage -initrd ../rootfs.img
+shiyanlou:lab3/ (master*) $ qemu -kernel ../../linux-src/arch/x86/boot/bzImage -initrd ../rootfs.img -s -S
 ```
 在另一个窗口执行gdb并依次执行如下gdb命令：
 ```
-(gdb) file ../../linux-3.18.6/vmlinux
-Reading symbols from ../../linux-3.18.6/vmlinux...done.
+(gdb) file ../../linux-src/vmlinux
+Reading symbols from ../../linux-src/vmlinux...done.
 (gdb) target remote:1234
 Remote debugging using :1234
 0x0000fff0 in ?? ()
@@ -243,4 +243,4 @@ Breakpoint 4, random_int_secret_init () at drivers/char/random.c:1712
 (gdb) 
 
 ```
-到这里我们就找到了Linux内核初始化TCP/IP的入口位置，即为[inet_init函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/af_inet.c#1674)。
+到这里我们就找到了Linux内核初始化TCP/IP的入口位置，即为[inet_init函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/af_inet.c#1674)。

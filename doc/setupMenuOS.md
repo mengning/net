@@ -1,6 +1,6 @@
 # 构建调试Linux内核网络代码的环境MenuOS系统
 
-您可以自定搭建环境，下文将基于Ubuntu 18.04 & linux-5.0.1提供简要指南，以便您能自行构建调试Linux内核网络代码的环境MenuOS系统。您也可以选择使用已经构建好的在线实验环境：[实验楼虚拟机https://www.shiyanlou.com/courses/1198](https://www.shiyanlou.com/courses/1198)，只是在线环境构建的比较早，是基于[linux-3.18.6](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/)内核的。
+您可以自定搭建环境，下文将基于Ubuntu 18.04 & linux-5.0.1提供简要指南，以便您能自行构建调试Linux内核网络代码的环境MenuOS系统。您也可以选择使用已经构建好的在线实验环境：[实验楼虚拟机https://www.shiyanlou.com/courses/1198](https://www.shiyanlou.com/courses/1198)，只是在线环境构建的比较早，是基于[linux-src](https://github.com/torvalds/linux/blob/v5.4/)内核的。
 
 ## 编译运行Linux内核
 
@@ -42,11 +42,11 @@ break start_kernel
 ```
 ## 使用实验楼在线环境运行MenuOS系统
 
-实验楼在线环境中已经在LinuxKernel目录下构建好了基于Linux-3.18.6的内核环境，可以使用实验楼的虚拟机打开Xfce终端（Terminal）, 运行MenuOS系统。
+实验楼在线环境中已经在LinuxKernel目录下构建好了基于linux-src的内核环境，可以使用实验楼的虚拟机打开Xfce终端（Terminal）, 运行MenuOS系统。
 
 ```
 shiyanlou:~/ $ cd LinuxKernel/
-shiyanlou:LinuxKernel/ $ qemu -kernel linux-3.18.6/arch/x86/boot/bzImage -initrd rootfs.img
+shiyanlou:LinuxKernel/ $ qemu -kernel linux-src/arch/x86/boot/bzImage -initrd rootfs.img
 ```
 
 ![](http://i2.51cto.com/images/blog/201811/05/3c8b6968d7384d176a67f35765e371ea.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=)
@@ -58,7 +58,7 @@ shiyanlou:LinuxKernel/ $ qemu -kernel linux-3.18.6/arch/x86/boot/bzImage -initrd
 使用gdb跟踪调试内核首先添加-s和-S选项启动MenuOS系
     
 ```
-qemu -kernel linux-3.18.6/arch/x86/boot/bzImage -initrd rootfs.img -s -S
+qemu -kernel linux-src/arch/x86/boot/bzImage -initrd rootfs.img -s -S
 ```
 
 关于-s和-S选项的说明：
@@ -69,7 +69,7 @@ qemu -kernel linux-3.18.6/arch/x86/boot/bzImage -initrd rootfs.img -s -S
 
 ```
 gdb
-    （gdb）file linux-3.18.6/vmlinux # 在gdb界面中targe remote之前加载符号表
+    （gdb）file linux-src/vmlinux # 在gdb界面中targe remote之前加载符号表
     （gdb）target remote:1234 # 建立gdb和gdbserver之间的连接
     （gdb）break start_kernel # 断点的设置可以在target remote之前，也可以在之后
     （gdb）c                  # 按c 让qemu上的Linux继续运行

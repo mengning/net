@@ -25,11 +25,11 @@ TCP将用户数据打包（分割）成报文段；发送后启动一个定时�
 
 ## TCP协议源代码概览
 
-TCP协议相关的代码主要集中在linux-3.18.6/net/ipv4/目录下，其中[linux-3.18.6/net/ipv4/tcp_ipv4.c#2380](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_ipv4.c#2380) 文件中的结构体变量struct proto tcp_prot指定了TCP协议栈的访问接口函数，socket接口层里sock->opt->connect和sock->opt->accept对应的接口函数即是在这里制定的，sock->opt->connect实际调用的是tcp_v4_connect函数，sock->opt->accept实际调用的是inet_csk_accept函数。
+TCP协议相关的代码主要集中在linux-src/net/ipv4/目录下，其中[linux-src/net/ipv4/tcp_ipv4.c#2380](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_ipv4.c#2380) 文件中的结构体变量struct proto tcp_prot指定了TCP协议栈的访问接口函数，socket接口层里sock->opt->connect和sock->opt->accept对应的接口函数即是在这里制定的，sock->opt->connect实际调用的是tcp_v4_connect函数，sock->opt->accept实际调用的是inet_csk_accept函数。
 
 在创建socket套接字描述符时sys_socket内核函数会根据指定的协议（例如socket(PF_INET,SOCK_STREAM,0)）挂载上对应的协议处理函数。
 
-除了TCP协议的访问接口，还有TCP协议的初始化工作，见[linux-3.18.6/net/ipv4/tcp.c#3046](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp.c#3046)，其中关键的工作就是[tcp_tasklet_init();](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp.c#3124)初始化了负责发送字节流进行滑动窗口管理的tasklet，这里读者可以简单的理解为创建了线程来专门负责这个工作。
+除了TCP协议的访问接口，还有TCP协议的初始化工作，见[linux-src/net/ipv4/tcp.c#3046](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp.c#3046)，其中关键的工作就是[tcp_tasklet_init();](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp.c#3124)初始化了负责发送字节流进行滑动窗口管理的tasklet，这里读者可以简单的理解为创建了线程来专门负责这个工作。
 
 ### TCP的三次握手的源代码分析
 
@@ -39,7 +39,7 @@ TCP的三次握手从用户程序的角度看就是客户端connect和服务端a
 
 ### tcp_v4_connect函数
 
-[tcp_v4_connect函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_ipv4.c#141)的主要作用就是发起一个TCP连接，建立TCP连接的过程自然需要底层协议的支持，因此我们从这个函数中可以看到它调用了IP层提供的一些服务，比如ip_route_connect和ip_route_newports从名称就可以简单分辨，这里我们关注在TCP层面的三次握手，不去深究底层协议提供的功能细节。我们可以看到这里设置了 TCP_SYN_SENT并进一步调用了 tcp_connect(sk)来实际构造SYN并发送出去。
+[tcp_v4_connect函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_ipv4.c#141)的主要作用就是发起一个TCP连接，建立TCP连接的过程自然需要底层协议的支持，因此我们从这个函数中可以看到它调用了IP层提供的一些服务，比如ip_route_connect和ip_route_newports从名称就可以简单分辨，这里我们关注在TCP层面的三次握手，不去深究底层协议提供的功能细节。我们可以看到这里设置了 TCP_SYN_SENT并进一步调用了 tcp_connect(sk)来实际构造SYN并发送出去。
 
 ```
 140/* This will initiate an outgoing connection. */
@@ -66,7 +66,7 @@ TCP的三次握手从用户程序的角度看就是客户端connect和服务端a
 264}
 265EXPORT_SYMBOL(tcp_v4_connect);
 ```
-[tcp_connect函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/tcp_output.c#3091)具体负责构造一个携带SYN标志位的TCP头并发送出去，同时还设置了计时器超时重发。
+[tcp_connect函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/tcp_output.c#3091)具体负责构造一个携带SYN标志位的TCP头并发送出去，同时还设置了计时器超时重发。
 ```
 3090/* Build a SYN and send it off. */
 3091int tcp_connect(struct sock *sk)
@@ -96,7 +96,7 @@ TCP的三次握手从用户程序的角度看就是客户端connect和服务端a
 3132	return 0;
 3133}
 ```
-其中tcp_transmit_skb函数负责将tcp数据发送出去，这里调用了icsk->icsk_af_ops->queue_xmit函数指针，实际上就是在TCP/IP协议栈初始化时设定好的IP层向上提供数据发送接口[ip_queue_xmit函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/ip_output.c#363)，这里TCP协议栈通过调用这个icsk->icsk_af_ops->queue_xmit函数指针来触发IP协议栈代码发送数据，感兴趣的读者可以查找queue_xmit函数指针是如何初始化为ip_queue_xmit函数的。具体ip_queue_xmit函数内部的实现我们在后续内容中会专题研究，本文聚焦在TCP协议的三次握手。
+其中tcp_transmit_skb函数负责将tcp数据发送出去，这里调用了icsk->icsk_af_ops->queue_xmit函数指针，实际上就是在TCP/IP协议栈初始化时设定好的IP层向上提供数据发送接口[ip_queue_xmit函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/ip_output.c#363)，这里TCP协议栈通过调用这个icsk->icsk_af_ops->queue_xmit函数指针来触发IP协议栈代码发送数据，感兴趣的读者可以查找queue_xmit函数指针是如何初始化为ip_queue_xmit函数的。具体ip_queue_xmit函数内部的实现我们在后续内容中会专题研究，本文聚焦在TCP协议的三次握手。
 ```
 876/* This routine actually transmits TCP packets queued in by
 877 * tcp_do_sendmsg().  This is used by both the initial
@@ -120,7 +120,7 @@ TCP的三次握手从用户程序的角度看就是客户端connect和服务端a
 
 ### inet_csk_accept函数
 
-另一头服务端调用[inet_csk_accept函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/inet_connection_sock.c#292)会请求队列中取出一个连接请求，如果队列为空则通过inet_csk_wait_for_connect阻塞住等待客户端的连接。
+另一头服务端调用[inet_csk_accept函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/inet_connection_sock.c#292)会请求队列中取出一个连接请求，如果队列为空则通过inet_csk_wait_for_connect阻塞住等待客户端的连接。
 ```
 289/*
 290 * This will accept the next outstanding connection.
@@ -171,7 +171,7 @@ TCP的三次握手从用户程序的角度看就是客户端connect和服务端a
 ...
 350}
 ```
-[inet_csk_wait_for_connect函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/inet_connection_sock.c#241)就是无限for循环，一旦有连接请求进来则跳出循环。
+[inet_csk_wait_for_connect函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/inet_connection_sock.c#241)就是无限for循环，一旦有连接请求进来则跳出循环。
 ```
 241/*
 242 * Wait for an incoming connection, avoid race conditions. This must be called
@@ -229,7 +229,7 @@ TCP的三次握手从用户程序的角度看就是客户端connect和服务端a
 以上的分析我们都是按照用户程序调用socket接口、通过系统调用陷入内核进入内核态的socket接口层代码，然后根据创建socket时指定协议选择适当的函数指针，比如sock->opt->connect和sock->opt->accept两个函数指针，从而进入协议处理代码中，本专栏是以TCP/IPv4为例（net/ipv4目录下），则是分别进入tcp_v4_connect函数和inet_csk_accept函数中。总之，主要的思路是call-in的方式逐级进行函数调用，但是接收数据放入accept队列的代码我们还没有跟踪到，接下来我们需要换一个思路，网卡接收到数据需要通知上层协议来接收并处理数据，那么应该有TCP协议的接收数据的函数被底层网络驱动callback方式进行调用，针对这个思路我们需要回过头来看TCP/IP协议栈的初始化过程中是不是有将recv的函数指针发布给网络底层代码。
 
 
-TCP/IP协议栈的初始化过程是在[inet_init函数](http://codelab.shiyanlou.com/source/xref/linux-3.18.6/net/ipv4/af_inet.c#1674)，其中有段代码中提到的tcp_protocol结构体变量很像：
+TCP/IP协议栈的初始化过程是在[inet_init函数](https://github.com/torvalds/linux/blob/v5.4/net/ipv4/af_inet.c#1674)，其中有段代码中提到的tcp_protocol结构体变量很像：
 ```
 1498static const struct net_protocol tcp_protocol = {
 1499	.early_demux	=	tcp_v4_early_demux,
